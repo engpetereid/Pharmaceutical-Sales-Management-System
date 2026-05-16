@@ -30,7 +30,7 @@
         <div class="content-wrapper">
             <div class="content-header row mb-2 no-print">
                 <div class="content-header-left col-md-8 col-12">
-                    <h3 class="content-header-title"> <i class="la la-bar-chart"></i> الملخص المالي الشهري  </h3>
+                    <h3 class="content-header-title"> <i class="la la-bar-chart"></i> الملخص المالي الشهري </h3>
                     <div class="row breadcrumbs-top">
                         <div class="breadcrumb-wrapper col-12">
                             <ol class="breadcrumb">
@@ -80,7 +80,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group mb-0">
-                                        <label class="text-bold-600">اختر منطقة</label>
+                                        <label class="text-bold-600">اختر منطقة (للفواتير ومصروف المنطقة)</label>
                                         <select name="zone" class="form-control">
                                             <option value="">-- عرض الكل --</option>
                                             @foreach($zones as $id => $name)
@@ -128,10 +128,10 @@
                     </div>
 
                     <div class="col-xl-4 col-md-6 col-12">
-                        <div class="card stat-card bg-gradient-x-danger box-shadow-1">
+                        <div class="card stat-card bg-gradient-x-danger box-shadow-1" title="مناطق: {{ $totalZoneExpenses }} | عامة: {{ $totalGeneralExpenses }}">
                             <div class="card-body">
                                 <div>
-                                    <span>إجمالي المصروفات </span>
+                                    <span>إجمالي المصروفات (الكل)</span>
                                     <h3>{{ number_format($totalExpenses, 2) }}</h3>
                                 </div>
                                 <i class="la la-arrow-circle-down text-white"></i>
@@ -143,7 +143,7 @@
                         <div class="card stat-card {{ $netProfit >= 0 ? 'bg-gradient-x-info' : 'bg-gradient-x-warning' }} box-shadow-1">
                             <div class="card-body">
                                 <div>
-                                    <span>الصافي</span>
+                                    <span>الصافي </span>
                                     <h3>{{ number_format($netProfit, 2) }}</h3>
                                 </div>
                                 <i class="la la-balance-scale text-white"></i>
@@ -158,18 +158,17 @@
                     <div class="col-xl-6 col-lg-12">
                         <div class="card border-top-success border-top-3">
                             <div class="card-header pb-0">
-                                <h4 class="card-title text-success"><i class="la la-plus-circle"></i> تفاصيل التحصيلات (الدخل)</h4>
-                                <p class="font-small-3 text-muted mt-1">المبالغ التي تم تحصيلها فعلياً خلال هذا الشهر.</p>
+                                <h4 class="card-title text-success"><i class="la la-plus-circle"></i> التحصيلات والدخل</h4>
                             </div>
                             <div class="card-content">
-                                <div class="card-body pt-0">
-                                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                <div class="card-body pt-0 mt-1">
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                                         <table class="table table-hover table-bordered mb-0">
                                             <thead class="bg-light position-sticky" style="top: 0; z-index: 10;">
                                             <tr>
                                                 <th>التاريخ</th>
                                                 <th>رقم الفاتورة</th>
-                                                <th>العميل (الصيدلية)</th>
+                                                <th>العميل</th>
                                                 <th>المبلغ</th>
                                             </tr>
                                             </thead>
@@ -206,51 +205,80 @@
                         </div>
                     </div>
 
-                    {{-- جدول المصروفات --}}
+                    {{-- جداول المصروفات (مناطق وعامة) في عمود واحد --}}
                     <div class="col-xl-6 col-lg-12">
-                        <div class="card border-top-danger border-top-3">
+                        {{-- مصروفات المناطق --}}
+                        <div class="card border-top-danger border-top-3 mb-2">
                             <div class="card-header pb-0">
-                                <h4 class="card-title text-danger"><i class="la la-minus-circle"></i> تفاصيل المصروفات </h4>
-                                <p class="font-small-3 text-muted mt-1">مصروفات وعمولات الأطباء التي تم صرفها خلال هذا الشهر.</p>
+                                <h4 class="card-title text-danger"><i class="la la-map-marker"></i> مصروفات وعمولات المناطق</h4>
                             </div>
                             <div class="card-content">
-                                <div class="card-body pt-0">
-                                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                <div class="card-body pt-0 mt-1">
+                                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
                                         <table class="table table-hover table-bordered mb-0">
                                             <thead class="bg-light position-sticky" style="top: 0; z-index: 10;">
                                             <tr>
                                                 <th>التاريخ</th>
-                                                <th>المنطقة (Zone)</th>
-                                                <th>البيان (الوصف)</th>
+                                                <th>المنطقة</th>
+                                                <th>البيان</th>
                                                 <th>المبلغ</th>
                                             </tr>
                                             </thead>
                                             <tbody>
-                                            @forelse($expenses as $expense)
+                                            @forelse($zoneExpenses as $expense)
                                                 <tr>
                                                     <td>{{ Carbon\Carbon::parse($expense->expense_date)->format('Y-m-d') }}</td>
                                                     <td>
                                                         <span class="badge badge-secondary">{{ $expense->zone->name ?? '-' }}</span>
                                                     </td>
-                                                    <td><span class="font-small-3" title="{{ $expense->description }}">{{ Str::limit($expense->description, 40) }}</span></td>
+                                                    <td><span class="font-small-3">{{ Str::limit($expense->description, 30) }}</span></td>
                                                     <td class="text-danger font-weight-bold">-{{ number_format($expense->amount, 2) }}</td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="4" class="text-center text-muted py-3">لا توجد مصروفات مسجلة في هذا الشهر.</td>
+                                                    <td colspan="4" class="text-center text-muted py-3">لا توجد مصروفات مناطق في هذا الشهر.</td>
                                                 </tr>
                                             @endforelse
                                             </tbody>
-                                            @if($expenses->count() > 0)
-                                                <tfoot class="bg-light font-weight-bold">
-                                                <tr>
-                                                    <td colspan="3" class="text-right">الإجمالي:</td>
-                                                    <td class="text-danger">{{ number_format($totalExpenses, 2) }}</td>
-                                                </tr>
-                                                </tfoot>
-                                            @endif
                                         </table>
                                     </div>
+                                    <div class="text-right mt-1 font-weight-bold text-danger">إجمالي المناطق: {{ number_format($totalZoneExpenses, 2) }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- المصروفات العامة --}}
+                        <div class="card border-top-warning border-top-3">
+                            <div class="card-header pb-0">
+                                <h4 class="card-title text-warning"><i class="la la-building"></i> المصروفات العامة</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="card-body pt-0 mt-1">
+                                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                        <table class="table table-hover table-bordered mb-0">
+                                            <thead class="bg-light position-sticky" style="top: 0; z-index: 10;">
+                                            <tr>
+                                                <th>التاريخ</th>
+                                                <th>البيان (الوصف)</th>
+                                                <th>المبلغ</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            @forelse($generalExpenses as $gExpense)
+                                                <tr>
+                                                    <td>{{ Carbon\Carbon::parse($gExpense->expense_date)->format('Y-m-d') }}</td>
+                                                    <td>{{ $gExpense->description }}</td>
+                                                    <td class="text-warning font-weight-bold">-{{ number_format($gExpense->amount, 2) }}</td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="3" class="text-center text-muted py-3">لا توجد مصروفات عامة مسجلة في هذا الشهر.</td>
+                                                </tr>
+                                            @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-right mt-1 font-weight-bold text-warning">إجمالي المصروفات العامة: {{ number_format($totalGeneralExpenses, 2) }}</div>
                                 </div>
                             </div>
                         </div>

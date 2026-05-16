@@ -101,6 +101,14 @@
                 </a>
             </li>
 
+            <li class="nav-item {{ request()->routeIs('admin.general-expenses') ? 'active' : '' }}">
+                <a href="{{ route('admin.general-expenses.index') }}">
+                    <i class="la la-map-marker"></i>
+                    <span class="menu-title">المصاريف</span>
+                </a>
+            </li>
+
+
             <li class="nav-item has-sub {{ request()->is('admin/reports/*') && !request()->routeIs('admin.reports.zone_risk.*') && !request()->routeIs('admin.reports.doctors_balance') ? 'open' : '' }}">
                 <a href="#"><i class="la la-line-chart"></i><span class="menu-title">تقارير الأداء</span></a>
                 <ul class="menu-content">
