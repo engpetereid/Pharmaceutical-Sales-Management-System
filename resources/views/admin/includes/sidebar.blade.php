@@ -84,7 +84,13 @@
             <li class="nav-item {{ request()->routeIs('admin.reports.monthly_financials') ? 'active' : '' }}">
                 <a href="{{ route('admin.monthly_financials') }}">
                     <i class="la la-pie-chart"></i>
-                    <span class="menu-title">الملخص المالى</span>
+                    <span class="menu-title">الملخص المالى الشهري</span>
+                </a>
+            </li>
+            <li class="nav-item {{ request()->routeIs('admin.treasury.index') ? 'active' : '' }}">
+                <a href="{{ route('admin.treasury.index') }}">
+                    <i class="la la-pie-chart"></i>
+                    <span class="menu-title">الخزنة</span>
                 </a>
             </li>
 

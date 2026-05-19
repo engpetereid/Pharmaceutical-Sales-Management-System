@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::delete('expenses/{id}', [ZoneExpenseController::class, 'destroy'])->name('zones.expenses.destroy');
     Route::resource('general-expenses', \App\Http\Controllers\Admin\GeneralExpenseController::class)->names('general-expenses');
     Route::get('/monthly-financials', [\App\Http\Controllers\Admin\ReportController::class, 'monthlyFinancials'])->name('monthly_financials');
+    Route::get('/treasury', [\App\Http\Controllers\Admin\TreasuryController::class, 'index'])->name('treasury.index');
 
     Route::resource('deals', DoctorDealController::class);
     Route::post('deals/{deal}/pay', [DoctorDealController::class, 'markAsPaid'])->name('deals.pay');

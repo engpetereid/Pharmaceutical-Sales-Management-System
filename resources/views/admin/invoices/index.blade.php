@@ -149,7 +149,7 @@
                     <div class="col-xl-3 col-md-6 col-12">
                         <div class="card stat-card stat-card-success">
                             <div class="card-body position-relative">
-                                <h6 class="mb-1 text-uppercase text-muted">تم تحصيله (الخزنة)</h6>
+                                <h6 class="mb-1 text-uppercase text-muted">تم تحصيله </h6>
                                 <h3 class="mb-0 font-weight-bold text-success">{{ number_format($stats['total_collected'] ?? 0) }}</h3>
                                 <i class="la la-money stat-icon text-success"></i>
                             </div>
