@@ -85,7 +85,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group mb-0">
-                                        <label class="text-bold-600">المناطق (يمكن اختيار أكثر من منطقة)</label>
+                                        <label class="text-bold-600">المناطق (التحصيلات فقط)</label>
                                         @php $selectedZones = request('zone_id', []); @endphp
                                         <select name="zone_id[]" class="form-control select2" multiple="multiple" data-placeholder="كل المناطق">
                                             @foreach($zones as $zone)
@@ -143,10 +143,10 @@
                     </div>
 
                     <div class="col-xl-4 col-md-6 col-12">
-                        <div class="card stat-card bg-gradient-x-danger box-shadow-1" title="مناطق: {{ number_format($totalZoneExpenses, 2) }} | عامة: {{ number_format($totalGeneralExpenses, 2) }}">
+                        <div class="card stat-card bg-gradient-x-danger box-shadow-1" title="عامة: {{ number_format($totalGeneralExpenses, 2) }}">
                             <div class="card-body">
                                 <div>
-                                    <span>إجمالي المصروفات (كلي)</span>
+                                    <span>إجمالي المصروفات العامة</span>
                                     <h3>{{ number_format($totalExpenses, 2) }}</h3>
                                 </div>
                                 <i class="la la-arrow-circle-up text-white" style="transform: rotate(180deg);"></i>
@@ -171,7 +171,7 @@
                 <div class="row match-height">
 
                     {{-- أ. جدول الدخل (التحصيلات) --}}
-                    <div class="col-xl-4 col-lg-12">
+                    <div class="col-xl-6 col-lg-12">
                         <div class="card border-top-success border-top-3">
                             <div class="card-header pb-0">
                                 <h4 class="card-title text-success"><i class="la la-plus-circle"></i> التحصيلات والدخل</h4>
@@ -214,50 +214,8 @@
                         </div>
                     </div>
 
-                    {{-- ب. جدول مصروفات المناطق --}}
-                    <div class="col-xl-4 col-lg-12">
-                        <div class="card border-top-danger border-top-3 mb-2">
-                            <div class="card-header pb-0">
-                                <h4 class="card-title text-danger"><i class="la la-map-marker"></i> مصروفات المناطق</h4>
-                            </div>
-                            <div class="card-content">
-                                <div class="card-body pt-0 mt-1">
-                                    <div class="table-responsive scrollable-table">
-                                        <table class="table table-hover table-bordered mb-0">
-                                            <thead>
-                                            <tr>
-                                                <th>التاريخ</th>
-                                                <th>البيان</th>
-                                                <th>المبلغ</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            @forelse($zoneExpenses as $expense)
-                                                <tr>
-                                                    <td>{{ $expense->expense_date}}</td>
-                                                    <td title="{{ $expense->zone->name ?? '' }} - {{ $expense->description }}">
-                                                        <span class="font-small-3">{{ Str::limit($expense->description, 20) }}</span>
-                                                    </td>
-                                                    <td class="text-danger font-weight-bold">-{{ number_format($expense->amount, 2) }}</td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="3" class="text-center text-muted py-3">لا توجد مصروفات مناطق.</td>
-                                                </tr>
-                                            @endforelse
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="text-right mt-1 font-weight-bold text-danger border-top pt-1">
-                                        إجمالي المناطق: {{ number_format($totalZoneExpenses, 2) }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- ج. المصروفات العامة --}}
-                    <div class="col-xl-4 col-lg-12">
+                    {{-- ب. المصروفات العامة --}}
+                    <div class="col-xl-6 col-lg-12">
                         <div class="card border-top-warning border-top-3">
                             <div class="card-header pb-0">
                                 <h4 class="card-title text-warning"><i class="la la-building"></i> المصروفات العامة</h4>
