@@ -2,6 +2,12 @@
 
 @section('title', 'تقرير صنف: ' . $drug->name)
 
+@section('style')
+    <style>
+        .select2-container--default .select2-selection--multiple { border: 1px solid #ccd6e6; min-height: 40px; }
+    </style>
+@endsection
+
 @section('content')
     <div class="app-content content">
         <div class="content-wrapper">
@@ -40,26 +46,29 @@
                                     <label class="text-muted font-small-3">إلى تاريخ</label>
                                     <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                                 </div>
+
                                 <div class="col-md-3 mb-1">
                                     <label class="text-muted font-small-3">المنطقة (Zone)</label>
-                                    <select name="zone_id" class="form-control select2">
-                                        <option value="">-- كل المناطق --</option>
+                                    @php $selectedZones = (array) request('zone_id', []); @endphp
+                                    <select name="zone_id[]" class="form-control select2" multiple="multiple" data-placeholder="-- كل المناطق --">
                                         @foreach($zones as $zone)
-                                            <option value="{{ $zone->id }}" {{ request('zone_id') == $zone->id ? 'selected' : '' }}>
+                                            <option value="{{ $zone->id }}" {{ in_array($zone->id, $selectedZones) ? 'selected' : '' }}>
                                                 {{ $zone->name }}
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
+
                                 <div class="col-md-2 mb-1">
                                     <label class="text-muted font-small-3">حالة الدفع</label>
-                                    <select name="status" class="form-control">
-                                        <option value="">-- الكل --</option>
-                                        <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>مدفوع</option>
-                                        <option value="2" {{ request('status') == '2' ? 'selected' : '' }}>آجل</option>
-                                        <option value="3" {{ request('status') == '3' ? 'selected' : '' }}>جزئي</option>
+                                    @php $selectedStatuses = (array) request('status', []); @endphp
+                                    <select name="status[]" class="form-control select2" multiple="multiple" data-placeholder="-- كل الحالات --">
+                                        <option value="1" {{ in_array('1', $selectedStatuses) ? 'selected' : '' }}>مدفوع</option>
+                                        <option value="2" {{ in_array('2', $selectedStatuses) ? 'selected' : '' }}>آجل</option>
+                                        <option value="3" {{ in_array('3', $selectedStatuses) ? 'selected' : '' }}>جزئي</option>
                                     </select>
                                 </div>
+
                                 <div class="col-md-3 mb-1 d-flex">
                                     <button type="submit" class="btn btn-primary flex-grow-1 mr-1" title="تصفية"><i class="ft-filter"></i> تصفية</button>
                                     <button type="submit" name="export" value="excel" class="btn btn-success flex-grow-1 mr-1" title="تصدير Excel"><i class="la la-file-excel-o"></i> Excel</button>

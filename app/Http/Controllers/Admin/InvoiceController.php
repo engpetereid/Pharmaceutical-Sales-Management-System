@@ -469,7 +469,7 @@ class InvoiceController extends Controller
             $query->where('line', 'like', '%' . $request->line . '%');
         }
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $query->whereIn('status', (array) $request->status);
         }
         if ($request->filled('pharmacist_id')) {
             $query->where('pharmacist_id', $request->pharmacist_id);

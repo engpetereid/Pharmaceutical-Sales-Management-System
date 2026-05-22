@@ -246,38 +246,45 @@ class ReportController extends Controller
     }
     public function monthlyFinancials(Request $request)
     {
+
         $selectedMonth = $request->input('month', Carbon::now()->month);
         $selectedYear = $request->input('year', Carbon::now()->year);
-        $selectedZone = $request->input('zone');
+        $selectedZones = (array) $request->input('zone', []);
 
-        $startDate = Carbon::createFromDate($selectedYear, $selectedMonth, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($selectedYear, $selectedMonth, 1)->endOfMonth();
+        if ($selectedMonth === 'all') {
+            $startDate = Carbon::createFromDate($selectedYear, 1, 1)->startOfYear();
+            $endDate = Carbon::createFromDate($selectedYear, 12, 31)->endOfYear();
+        } else {
+            $startDate = Carbon::createFromDate($selectedYear, $selectedMonth, 1)->startOfMonth();
+            $endDate = Carbon::createFromDate($selectedYear, $selectedMonth, 1)->endOfMonth();
+        }
 
-        // 1. حساب إجمالي الدخل
+        // 2. حساب إجمالي الدخل
         $paymentsQuery = InvoicePayment::with(['invoice.pharmacist'])
             ->whereBetween('payment_date', [$startDate, $endDate]);
 
-        if ($selectedZone) {
-            $paymentsQuery->whereHas('invoice.pharmacist.center.zones', function($q) use ($selectedZone) {
-                $q->where('zones.id', $selectedZone);
+        // الفلترة بأكثر من منطقة إن وجد
+        if (!empty($selectedZones)) {
+            $paymentsQuery->whereHas('invoice.pharmacist.center.zones', function($q) use ($selectedZones) {
+                $q->whereIn('zones.id', $selectedZones);
             });
         }
 
         $payments = $paymentsQuery->orderBy('payment_date', 'desc')->get();
         $totalIncome = $payments->sum('amount');
 
-        // 2. حساب مصروفات المناطق فقط
+        // 3. حساب مصروفات المناطق فقط
         $zoneExpensesQuery = ZoneExpense::with('zone')
             ->whereBetween('expense_date', [$startDate, $endDate]);
 
-        if ($selectedZone) {
-            $zoneExpensesQuery->where('zone_id', $selectedZone);
+        if (!empty($selectedZones)) {
+            $zoneExpensesQuery->whereIn('zone_id', $selectedZones);
         }
 
         $zoneExpenses = $zoneExpensesQuery->orderBy('expense_date', 'desc')->get();
         $totalExpenses = $zoneExpenses->sum('amount');
 
-        // 3. صافي الربح
+        // 4. صافي الربح
         $netProfit = $totalIncome - $totalExpenses;
 
         $months = [
@@ -287,23 +294,30 @@ class ReportController extends Controller
         $years = range(Carbon::now()->year - 2, Carbon::now()->year + 1);
         $zones = Zone::pluck('name', 'id')->toArray();
 
-        // 4. تصدير إكسيل
+        // 5. تصدير إكسيل
         if ($request->has('export') && $request->export == 'excel') {
-            $filename = "financials_{$selectedYear}_{$selectedMonth}.csv";
+            $monthSuffix = $selectedMonth === 'all' ? 'All_Months' : $selectedMonth;
+            $filename = "financials_{$selectedYear}_{$monthSuffix}.csv";
+
             $callback = function () use ($payments, $zoneExpenses, $months, $selectedMonth, $selectedYear, $totalIncome, $totalExpenses, $netProfit) {
                 $file = fopen('php://output', 'w');
-                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // لدعم اللغة العربية
 
-                fputcsv($file, ['التقرير المالي لشهر', $months[(int)$selectedMonth] . ' ' . $selectedYear]);
+                $monthName = $selectedMonth === 'all' ? 'كل الشهور' : $months[(int)$selectedMonth];
+                fputcsv($file, ['التقرير المالي للفترة:', $monthName . ' ' . $selectedYear]);
                 fputcsv($file, ['إجمالي الدخل', $totalIncome]);
                 fputcsv($file, ['إجمالي المصروفات', $totalExpenses]);
                 fputcsv($file, ['صافي التدفق النقدي', $netProfit]);
                 fputcsv($file, []);
 
+                fputcsv($file, ['--- تفاصيل التحصيلات ---']);
                 fputcsv($file, ['التاريخ', 'رقم الفاتورة/البيان', 'العميل/المنطقة', 'المبلغ']);
                 foreach ($payments as $payment) {
                     fputcsv($file, [$payment->payment_date->format('Y-m-d'), $payment->invoice->serial_number ?? $payment->invoice_id, $payment->invoice->pharmacist->name ?? '-', $payment->amount]);
                 }
+
+                fputcsv($file, []);
+                fputcsv($file, ['--- تفاصيل المصروفات ---']);
                 foreach ($zoneExpenses as $expense) {
                     fputcsv($file, [$expense->expense_date, $expense->zone->name ?? '-', $expense->description, '-' . $expense->amount]);
                 }
@@ -313,11 +327,14 @@ class ReportController extends Controller
             return response()->stream($callback, 200, [
                 "Content-Type" => "text/csv",
                 "Content-Disposition" => "attachment; filename=$filename",
+                "Pragma" => "no-cache",
+                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+                "Expires" => "0"
             ]);
         }
 
         return view('admin.reports.monthly_financials', compact(
-            'selectedMonth', 'selectedYear', 'months', 'years', 'zones', 'selectedZone',
+            'selectedMonth', 'selectedYear', 'months', 'years', 'zones', 'selectedZones',
             'payments', 'totalIncome', 'zoneExpenses', 'totalExpenses', 'netProfit'
         ));
     }

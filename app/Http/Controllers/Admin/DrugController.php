@@ -73,13 +73,17 @@ class DrugController extends Controller
                 if ($request->filled('end_date')) {
                     $invoiceQuery->whereDate('invoice_date', '<=', $request->end_date);
                 }
+                // تعديل لدعم تعدد المناطق
                 if ($request->filled('zone_id')) {
-                    $invoiceQuery->whereHas('pharmacist.center.zones', function ($zoneQuery) use ($request) {
-                        $zoneQuery->where('zones.id', $request->zone_id);
+                    $zoneIds = (array) $request->zone_id;
+                    $invoiceQuery->whereHas('pharmacist.center.zones', function ($zoneQuery) use ($zoneIds) {
+                        $zoneQuery->whereIn('zones.id', $zoneIds);
                     });
                 }
+                // تعديل لدعم تعدد حالات الدفع
                 if ($request->filled('status')) {
-                    $invoiceQuery->where('status', $request->status);
+                    $statuses = (array) $request->status;
+                    $invoiceQuery->whereIn('status', $statuses);
                 }
             });
 

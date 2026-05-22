@@ -262,13 +262,13 @@
                                         </select>
                                     </div>
 
-                                    <div class="mb-1 col-md-3">
-                                        <label class="text-muted font-small-3">حالة الدفع</label>
-                                        <select name="status" class="form-control">
-                                            <option value="">-- الكل --</option>
-                                            <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>مدفوع</option>
-                                            <option value="2" {{ request('status') == '2' ? 'selected' : '' }}>آجل</option>
-                                            <option value="3" {{ request('status') == '3' ? 'selected' : '' }}>جزئي</option>
+                                    <div class="col-md-3 mb-1">
+                                        <label class="text-muted font-small-3">حالة الدفع (يمكن اختيار أكثر من حالة)</label>
+                                        @php $selectedStatuses = (array) request('status', []); @endphp
+                                        <select name="status[]" class="form-control select2" multiple="multiple" data-placeholder="-- كل الحالات --">
+                                            <option value="1" {{ in_array('1', $selectedStatuses) ? 'selected' : '' }}>مدفوع</option>
+                                            <option value="2" {{ in_array('2', $selectedStatuses) ? 'selected' : '' }}>آجل</option>
+                                            <option value="3" {{ in_array('3', $selectedStatuses) ? 'selected' : '' }}>جزئي</option>
                                         </select>
                                     </div>
 
