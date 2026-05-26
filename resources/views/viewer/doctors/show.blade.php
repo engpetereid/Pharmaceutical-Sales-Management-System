@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.viewer')
 
 @section('title', 'ملف الطبيب: ' . $doctor->name)
 
@@ -89,19 +89,15 @@
                     <div class="row breadcrumbs-top">
                         <div class="breadcrumb-wrapper col-12">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('admin.doctors.index') }}">الأطباء</a>
+                                <li class="breadcrumb-item"><a href="{{ route('viewer.dashboard') }}">الرئيسية</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('viewer.doctors.index') }}">الأطباء</a>
                                 </li>
                                 <li class="breadcrumb-item active">{{ $doctor->name }}</li>
                             </ol>
                         </div>
                     </div>
                 </div>
-                <div class="content-header-right col-md-6 col-12 text-right">
-                    <a href="{{ route('admin.doctors.edit', $doctor->id) }}" class="btn btn-warning box-shadow-2">
-                        <i class="ft-edit"></i> تعديل البيانات
-                    </a>
-                </div>
+
             </div>
 
             <div class="content-body">
@@ -216,7 +212,7 @@
                                                             <td class="font-weight-bold">{{ number_format($invoice->final_total) }}</td>
 
                                                             <td>
-                                                                <a href="{{ route('admin.invoices.show', $invoice->id) }}"
+                                                                <a href="{{ route('viewer.invoices.show', $invoice->id) }}"
                                                                    target="_blank"
                                                                    class="btn btn-sm btn-outline-primary"><i
                                                                         class="ft-eye"></i></a></td>
@@ -291,10 +287,7 @@
                                                                             class="text-muted font-small-2">العمولة</span>
                                                                         <h6 class="text-bold-700 mb-0">{{ number_format($deal->commission_amount) }}</h6>
                                                                     </div>
-                                                                    <div class="col-6"><a
-                                                                            href="{{ route('admin.deals.edit', $deal->id) }}"
-                                                                            class="btn btn-sm btn-outline-secondary mt-1">تعديل
-                                                                            / تفاصيل</a></div>
+
                                                                 </div>
 
                                                             </div>

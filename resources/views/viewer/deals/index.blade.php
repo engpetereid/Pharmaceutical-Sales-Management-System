@@ -1,6 +1,6 @@
-@extends('layouts.admin')
+@extends('layouts.viewer')
 
-@section('title', request()->routeIs('admin.deals.archived') ? 'أرشيف الاتفاقات' : 'اتفاقات وتارجت الأطباء')
+@section('title', request()->routeIs('viewer.deals.archived') ? 'أرشيف الاتفاقات' : 'اتفاقات وتارجت الأطباء')
 
 @section('style')
     <style>
@@ -69,12 +69,12 @@
                 max-width: 41% !important;
                 margin-left: 75px !important;
             }
-             .card {
-            border: 1px solid #999 !important;
-            break-inside: avoid;
-            margin-bottom: 0 !important;
-            box-shadow: none !important;
-        }
+            .card {
+                border: 1px solid #999 !important;
+                break-inside: avoid;
+                margin-bottom: 0 !important;
+                box-shadow: none !important;
+            }
             .deal-card.is-stopped { background-color: #eee !important; }
 
             /* تنسيقات الإحصائيات للطباعة */
@@ -134,7 +134,7 @@
 
             <div class="print-header-wrapper">
                 <div class="print-header">
-                    <h2>{{ request()->routeIs('admin.deals.archived') ? 'أرشيف الاتفاقات' : 'تقرير اتفاقات وتارجت الأطباء' }}</h2>
+                    <h2>{{ request()->routeIs('viewer.deals.archived') ? 'أرشيف الاتفاقات' : 'تقرير اتفاقات وتارجت الأطباء' }}</h2>
                     <p>تاريخ الطباعة: {{ date('Y-m-d H:i') }} | عدد الاتفاقات: {{ $deals->total() }}</p>
                 </div>
 
@@ -146,30 +146,28 @@
 
             <div class="mb-2 content-header row no-print">
                 <div class="col-md-6 col-12">
-                    @if(request()->routeIs('admin.deals.archived'))
+                    @if(request()->routeIs('viewer.deals.archived'))
                         <h3 class="content-header-title text-muted"> <i class="la la-archive"></i> أرشيف الاتفاقات  </h3>
                     @else
                         <h3 class="content-header-title"> <i class="la la-handshake-o"></i> اتفاقات الأطباء </h3>
                     @endif
                 </div>
                 <div class="text-right col-md-6 col-12">
-                    @if(request()->routeIs('admin.deals.archived'))
-                        <a href="{{ route('admin.deals.index') }}" class="btn btn-primary box-shadow-2">
+                    @if(request()->routeIs('viewer.deals.archived'))
+                        <a href="{{ route('viewer.deals.index') }}" class="btn btn-primary box-shadow-2">
                             <i class="la la-arrow-left"></i> العودة للاتفاقات الجارية
                         </a>
                     @else
-                        <a href="{{ route('admin.deals.archived') }}" class="btn btn-secondary">
+                        <a href="{{ route('viewer.deals.archived') }}" class="btn btn-secondary">
                             <i class="la la-archive"></i> الأرشيف
                         </a>
-                        <a href="{{ route('admin.deals.create') }}" class="btn btn-primary box-shadow-2">
-                            <i class="ft-plus"></i> اتفاق جديد
-                        </a>
+
                     @endif
                 </div>
             </div>
-             <div class="content-body">
-                @include('admin.includes.alerts.success')
-                @include('admin.includes.alerts.errors')
+            <div class="content-body">
+                @include('viewer.includes.alerts.success')
+                @include('viewer.includes.alerts.errors')
 
                 {{-- إحصائيات ملخص الاتفاقات المتجاوبة مع الفلتر --}}
                 <div class="row card_con mb-2">
@@ -226,7 +224,7 @@
                                             <option value="">-- كل المناطق --</option>
                                             @foreach( $zones as $zone)
                                                 <option value="{{ $zone->id }}" {{ request('zone_id') == $zone->id ? 'selected' : '' }}>
-                                                     {{ $zone->name }}
+                                                    {{ $zone->name }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -309,7 +307,7 @@
                                         <div class="media">
                                             <div class="text-left media-body">
                                                 <h4 class="mb-0 text-bold-600">
-                                                    <a href="{{ route('admin.doctors.show', $deal->doctor_id) }}" class="text-dark">{{ $deal->doctor->name }}</a>
+                                                    <a href="{{ route('viewer.doctors.show', $deal->doctor_id) }}" class="text-dark">{{ $deal->doctor->name }}</a>
                                                 </h4>
                                                 <div class="mt-1">
                                                     <span class="border badge badge-pill badge-light" title="{{ $deal->pharmacists->pluck('name')->implode(', ') }}">
@@ -342,7 +340,7 @@
                                                 <div class="d-flex flex-column justify-content-center" style="min-height: 85px;">
                                                     <div class="mb-1 d-flex justify-content-between font-small-3">
                                                         <span class="text-muted">المحقق: <strong class="text-dark">{{ number_format($deal->achieved_amount) }}</strong></span>
-                                                         <span class="text-muted">الهدف: <strong>{{ number_format($deal->target_amount) }}</strong></span>
+                                                        <span class="text-muted">الهدف: <strong>{{ number_format($deal->target_amount) }}</strong></span>
                                                     </div>
 
                                                     <div class="mb-0 progress box-shadow-1">
@@ -394,7 +392,7 @@
 
                                             <div class="pt-2 mt-auto row no-print" style="position: relative; z-index: 1;">
                                                 <div class="mb-1 col-12">
-                                                    <a href="{{ route('admin.deals.invoices', $deal->id) }}" class="btn btn-sm btn-outline-info btn-block">
+                                                    <a href="{{ route('viewer.deals.invoices', $deal->id) }}" class="btn btn-sm btn-outline-info btn-block">
                                                         <i class="la la-list"></i> عرض الفواتير المحققة
                                                     </a>
                                                 </div>
@@ -412,16 +410,6 @@
                                                             <div class="mt-1 text-center font-small-2 text-primary">
                                                                 <i class="la la-infinity"></i> حساب جاري (مفتوح)
                                                             </div>
-
-                                                        @elseif($canSettle && $hasBalance)
-
-                                                            <form action="{{ route('admin.deals.pay', $deal->id) }}" method="POST">
-                                                                @csrf
-                                                                <button type="submit" class="btn btn-sm btn-success btn-block box-shadow-2"
-                                                                        onclick="return confirm('تأكيد تسوية المبلغ المتبقي؟')">
-                                                                    <i class="ft-check-circle"></i> تسوية المتبقي
-                                                                </button>
-                                                            </form>
 
                                                         @elseif(!$hasBalance && $canSettle)
                                                             <div class="mt-1 text-center font-small-2 text-success">
@@ -443,9 +431,9 @@
 
                                                 <div class="mt-1 col-12">
                                                     <div class="actions-footer">
-                                                        <div class="d-flex">
-                                                             @if(!$deal->is_archived)
-                                                                <form action="{{ route('admin.deals.toggleActive', $deal->id) }}" method="POST" class="mr-1">
+                                                        <div class="d-flex invisible">
+                                                            @if(!$deal->is_archived)
+                                                                <form action="" method="POST" class="mr-1">
                                                                     @csrf
                                                                     <button type="submit" class="btn-icon-soft {{ $deal->is_active ? 'btn-soft-warning' : 'btn-soft-success' }}"
                                                                             data-toggle="tooltip" title="{{ $deal->is_active ? 'إيقاف مؤقت' : 'تنشيط العمل' }}">
@@ -453,7 +441,7 @@
                                                                     </button>
                                                                 </form>
                                                             @endif
-                                                            <form action="{{ route('admin.deals.toggleArchive', $deal->id) }}" method="POST">
+                                                            <form action="" method="POST">
                                                                 @csrf
                                                                 <button type="submit" class="btn-icon-soft {{ $deal->is_archived ? 'btn-soft-info' : 'btn-soft-dark' }}"
                                                                         data-toggle="tooltip" title="{{ $deal->is_archived ? 'استعادة' : 'أرشفة' }}">
@@ -462,11 +450,11 @@
                                                             </form>
                                                         </div>
 
-                                                        <div class="d-flex">
-                                                            <a href="{{ route('admin.deals.edit', $deal->id) }}" class="mr-1 btn-icon-soft btn-soft-primary" data-toggle="tooltip" title="تعديل">
+                                                        <div class="d-flex invisible">
+                                                            <a href="" class="mr-1 btn-icon-soft btn-soft-primary" data-toggle="tooltip" title="تعديل">
                                                                 <i class="ft-edit"></i>
                                                             </a>
-                                                            <form action="{{ route('admin.deals.destroy', $deal->id) }}" method="POST">
+                                                            <form action="" method="POST">
                                                                 @csrf @method('DELETE')
                                                                 <button type="submit" class="btn-icon-soft btn-soft-danger" onclick="return confirm('حذف نهائي؟')" data-toggle="tooltip" title="حذف">
                                                                     <i class="ft-trash"></i>
@@ -486,10 +474,8 @@
                         <div class="col-12">
                             <div class="p-2 text-center alert alert-light box-shadow-1 border-primary">
                                 <h4 class="text-muted"><i class="mr-1 ft-info"></i> لا توجد بيانات للعرض</h4>
-                                @if(request()->routeIs('admin.deals.archived'))
-                                    <a href="{{ route('admin.deals.index') }}" class="btn btn-primary btn-sm">العودة للاتفاقات الجارية</a>
-                                @else
-                                    <a href="{{ route('admin.deals.create') }}" class="btn btn-primary btn-sm">إضافة اتفاق جديد</a>
+                                @if(request()->routeIs('viewer.deals.archived'))
+                                    <a href="{{ route('viewer.deals.index') }}" class="btn btn-primary btn-sm">العودة للاتفاقات الجارية</a>
                                 @endif
                             </div>
                         </div>

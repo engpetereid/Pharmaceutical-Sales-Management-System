@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.viewer')
 
 @section('title', 'تفاصيل مركز: ' . $center->name)
 
@@ -37,18 +37,14 @@
                     <div class="row breadcrumbs-top">
                         <div class="breadcrumb-wrapper col-12">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('admin.centers.index') }}">المراكز</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('viewer.dashboard') }}">الرئيسية</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('viewer.centers.index') }}">المراكز</a></li>
                                 <li class="breadcrumb-item active">{{ $center->name }}</li>
                             </ol>
                         </div>
                     </div>
                 </div>
-                <div class="content-header-right col-md-6 col-12 text-right">
-                    <a href="{{ route('admin.centers.edit', $center->id) }}" class="btn btn-warning box-shadow-2">
-                        <i class="ft-edit"></i> تعديل البيانات
-                    </a>
-                </div>
+
             </div>
 
             <div class="content-body">
@@ -115,7 +111,7 @@
                                             <span class="font-small-3 text-white opacity-75">متابعة نشاط العملاء والأطباء في نطاق {{ $center->name }}</span>
                                         </div>
                                         <div class="text-right">
-                                            <a href="{{ route('admin.reports.center', $center->id) }}" class="btn btn-sm btn-white text-success box-shadow-1">
+                                            <a href="{{ route('viewer.reports.center', $center->id) }}" class="btn btn-sm btn-white text-success box-shadow-1">
                                                 <i class="la la-bar-chart"></i> عرض التقرير المالي
                                             </a>
                                         </div>
@@ -147,9 +143,6 @@
                             <div class="tab-pane active" id="tab1" role="tabpanel" aria-labelledby="base-tab1">
                                 <div class="d-flex justify-content-between align-items-center mb-2 mt-1">
                                     <h5 class="text-bold-600">قائمة الصيدليات</h5>
-                                    <a href="{{ route('admin.pharmacists.create', ['center_id' => $center->id]) }}" class="btn btn-primary btn-sm box-shadow-2">
-                                        <i class="ft-plus"></i> إضافة صيدلية جديدة
-                                    </a>
                                 </div>
 
                                 <div class="table-responsive">
@@ -170,12 +163,8 @@
                                                 <td>{{ $pharmacist->phone }}</td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
-                                                        <a href="{{ route('admin.pharmacists.show', $pharmacist->id) }}" class="btn btn-outline-info" title="عرض"><i class="ft-eye"></i></a>
-                                                        <a href="{{ route('admin.pharmacists.edit', $pharmacist->id) }}" class="btn btn-outline-warning" title="تعديل"><i class="ft-edit"></i></a>
-                                                        <form action="{{ route('admin.pharmacists.destroy', $pharmacist->id) }}" method="POST" style="display:inline">
-                                                            @csrf @method('DELETE')
-                                                            <button type="button" class="btn btn-outline-danger" onclick="if(confirm('حذف الصيدلية؟')){this.form.submit()}" title="حذف"><i class="ft-trash"></i></button>
-                                                        </form>
+                                                        <a href="{{ route('viewer.pharmacists.show', $pharmacist->id) }}" class="btn btn-outline-info" title="عرض"><i class="ft-eye"></i></a>
+
                                                     </div>
                                                 </td>
                                             </tr>
@@ -190,9 +179,6 @@
                             <div class="tab-pane" id="tab2" role="tabpanel" aria-labelledby="base-tab2">
                                 <div class="d-flex justify-content-between align-items-center mb-2 mt-1">
                                     <h5 class="text-bold-600">قائمة الأطباء</h5>
-                                    <a href="{{ route('admin.doctors.create', ['center_id' => $center->id]) }}" class="btn btn-danger btn-sm box-shadow-2">
-                                        <i class="ft-plus"></i> إضافة طبيب جديد
-                                    </a>
                                 </div>
 
                                 <div class="table-responsive">
@@ -211,12 +197,8 @@
                                                 <td>{{ $doctor->speciality ?? 'غير محدد' }}</td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
-                                                        <a href="{{ route('admin.doctors.show', $doctor->id) }}" class="btn btn-outline-info" title="ملف الطبيب"><i class="ft-user"></i></a>
-                                                        <a href="{{ route('admin.doctors.edit', $doctor->id) }}" class="btn btn-outline-warning" title="تعديل"><i class="ft-edit"></i></a>
-                                                        <form action="{{ route('admin.doctors.destroy', $doctor->id) }}" method="POST" style="display:inline">
-                                                            @csrf @method('DELETE')
-                                                            <button type="button" class="btn btn-outline-danger" onclick="if(confirm('حذف الطبيب؟')){this.form.submit()}" title="حذف"><i class="ft-trash"></i></button>
-                                                        </form>
+                                                        <a href="{{ route('viewer.doctors.show', $doctor->id) }}" class="btn btn-outline-info" title="ملف الطبيب"><i class="ft-user"></i></a>
+
                                                     </div>
                                                 </td>
                                             </tr>

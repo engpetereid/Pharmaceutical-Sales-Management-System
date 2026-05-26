@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.viewer')
 
 @section('title', 'الخزينة ')
 
@@ -52,7 +52,7 @@
                     <div class="row breadcrumbs-top">
                         <div class="breadcrumb-wrapper col-12">
                             <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('viewer.dashboard') }}">الرئيسية</a></li>
                                 <li class="breadcrumb-item active">الخزينة</li>
                             </ol>
                         </div>
@@ -69,7 +69,7 @@
                 {{-- 1. الفلتر (تاريخ ومناطق) --}}
                 <div class="card filter-card box-shadow-1 border-top-primary border-top-3 no-print">
                     <div class="card-body">
-                        <form action="{{ route('admin.treasury.index') }}" method="GET">
+                        <form action="{{ route('viewer.treasury.index') }}" method="GET">
                             <div class="row align-items-end">
                                 <div class="col-md-3">
                                     <div class="form-group mb-0">
@@ -101,7 +101,7 @@
                                         <button type="submit" class="btn btn-primary" title="تصفية">
                                             <i class="ft-filter"></i>
                                         </button>
-                                        <a href="{{ route('admin.treasury.index') }}" class="btn btn-secondary" title="إلغاء الفلتر">
+                                        <a href="{{ route('viewer.treasury.index') }}" class="btn btn-secondary" title="إلغاء الفلتر">
                                             <i class="ft-x"></i>
                                         </a>
                                         <button type="submit" name="export" value="excel" class="btn btn-success" title="تصدير">
@@ -192,7 +192,7 @@
                                                 <tr>
                                                     <td>{{ $payment->payment_date->format('Y-m-d') }}</td>
                                                     <td>
-                                                        <a href="{{ route('admin.invoices.show', $payment->invoice_id) }}" target="_blank">
+                                                        <a href="{{ route('viewer.invoices.show', $payment->invoice_id) }}" target="_blank">
                                                             #{{ $payment->invoice->serial_number ?? $payment->invoice_id }}
                                                         </a>
                                                     </td>

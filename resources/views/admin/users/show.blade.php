@@ -201,7 +201,8 @@
                                                         <th>الصيدلية</th>
                                                         <th>المندوب</th>
                                                         <th>قيمة الفاتورة</th>
-
+                                                        <th>العمولة</th>
+                                                        <th>حالة العمولة</th>
                                                         <th>عرض</th>
                                                     </tr>
                                                     </thead>
@@ -214,7 +215,14 @@
                                                             <td>{{ $invoice->pharmacist->name ?? '-' }}</td>
                                                             <td>{{ $invoice->representative->name ?? '-' }}</td>
                                                             <td class="font-weight-bold">{{ number_format($invoice->final_total) }}</td>
-
+                                                            <td class="text-info font-weight-bold">{{ number_format($comm) }}</td>
+                                                            <td>
+                                                                @if($invoice->doctor_commission_paid)
+                                                                    <span class="badge badge-success">مدفوعة</span>
+                                                                @else
+                                                                    <span class="badge badge-warning">مستحقة</span>
+                                                                @endif
+                                                            </td>
                                                             <td>
                                                                 <a href="{{ route('admin.invoices.show', $invoice->id) }}"
                                                                    target="_blank"

@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ProvinceController;
 use App\Http\Controllers\Admin\RepresentativeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\DoctorDealController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WarehouseController;
 use App\Http\Controllers\Admin\ZoneExpenseController;
 use App\Http\Controllers\Admin\ZoneReportController;
@@ -17,12 +18,23 @@ use App\Http\Controllers\Admin\ZoneController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\me;
+use App\Http\Controllers\me;
 
 Route::get('/', function () {
-    return redirect()->route('admin.dashboard');
-});
 
+    if (!auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    if (auth()->user()->role == 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if (auth()->user()->role == 'viewer') {
+        return redirect()->route('viewer.dashboard');
+    }
+    abort(403);
+});
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -35,6 +47,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
+    Route::resource('users', UserController::class);
     Route::resource('drugs', DrugController::class);
     Route::resource('provinces', ProvinceController::class);
     Route::resource('centers', CenterController::class);
@@ -108,6 +121,76 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('zone-risk-shortcut', [ZoneReportController::class, 'index'])->name('zone_risk');
     });
 });
+
+
+
+
+
+
+Route::middleware(['auth', 'role:viewer'])->prefix('viewer')->name('viewer.')->group(function () {
+
+    Route::get('/', [\App\Http\Controllers\Viewer\ViewerDashboardController::class, 'index'])->name('dashboard');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('/dashboard/line/{id}', [\App\Http\Controllers\Viewer\ViewerDashboardController::class, 'lineDashboard'])->name('dashboard.line');
+
+    // Read-only resources (only index + show)
+    Route::resource('drugs', \App\Http\Controllers\Viewer\ViewerDrugController::class)->only(['index', 'show']);
+    Route::resource('provinces', \App\Http\Controllers\Viewer\ViewerProvinceController::class)->only(['index']);
+    Route::resource('centers', \App\Http\Controllers\Viewer\ViewerCenterController::class)->only(['index', 'show']);
+    Route::resource('doctors', \App\Http\Controllers\Viewer\ViewerDoctorController::class)->only(['index', 'show']);
+    Route::resource('pharmacists', \App\Http\Controllers\Viewer\ViewerPharmacistController::class)->only(['index', 'show']);
+    Route::resource('representatives', \App\Http\Controllers\Viewer\ViewerRepresentativeController::class)->only(['index', 'show']);
+    Route::resource('zones', \App\Http\Controllers\Viewer\ViewerZoneController::class)->only(['index', 'show']);
+    Route::resource('warehouses', \App\Http\Controllers\Viewer\ViewerWarehouseController::class)->only(['index', 'show']);
+    Route::resource('deals', \App\Http\Controllers\Viewer\ViewerDoctorDealController::class)->only(['index']);
+    Route::get('deals/{deal}/invoices', [\App\Http\Controllers\Viewer\ViewerDoctorDealController::class, 'showInvoices'])->name('deals.invoices');
+    Route::get('deals/archived', [\App\Http\Controllers\Viewer\ViewerDoctorDealController::class, 'archived'])->name('deals.archived');
+
+    // Invoices (read-only)
+    Route::get('invoices/export', [\App\Http\Controllers\Viewer\ViewerInvoiceController::class, 'export'])->name('invoices.export');
+    Route::resource('invoices', \App\Http\Controllers\Viewer\ViewerInvoiceController::class)->only(['index', 'show']);
+    Route::get('invoices/{invoice}/payments', [\App\Http\Controllers\Viewer\ViewerInvoiceController::class, 'payments'])->name('invoices.payments');
+    Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Viewer\ViewerInvoiceController::class, 'printPdf'])->name('invoices.pdf');
+
+    // General expenses (read-only)
+    Route::get('general-expenses', [\App\Http\Controllers\Viewer\ViewerGeneralExpenseController::class, 'index'])->name('general-expenses.index');
+
+    // Financial views
+    Route::get('/monthly-financials', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'monthlyFinancials'])->name('monthly_financials');
+    Route::get('/treasury', [\App\Http\Controllers\Viewer\ViewerTreasuryController::class, 'index'])->name('treasury.index');
+
+    // Reports (read-only)
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'index'])->name('index');
+        Route::get('/province/{id}', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'showProvince'])->name('province');
+        Route::get('/center/{id}', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'showCenter'])->name('center');
+        Route::get('/pharmacist/{id}', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'showPharmacist'])->name('pharmacist');
+        Route::get('/monthly-financials', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'monthlyFinancials'])->name('monthly_financials');
+
+        Route::prefix('representatives')->name('representatives.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'representativesIndex'])->name('index');
+            Route::get('/{id}', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'showRepresentative'])->name('show');
+        });
+
+        Route::get('doctors-balance', [\App\Http\Controllers\Viewer\ViewerDoctorBalanceController::class, 'index'])->name('doctors_balance');
+
+        Route::prefix('doctors')->name('doctors.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'doctorsIndex'])->name('index');
+            Route::get('/province/{id}', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'showDoctorProvince'])->name('province');
+            Route::get('/center/{id}', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'showDoctorCenter'])->name('center');
+            Route::get('/doctor/{id}', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'showDoctor'])->name('show');
+        });
+
+        Route::prefix('zone-risk')->name('zone_risk.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Viewer\ViewerZoneReportController::class, 'index'])->name('index');
+            Route::get('/export', [\App\Http\Controllers\Viewer\ViewerZoneReportController::class, 'export'])->name('export');
+            Route::get('/{id}', [\App\Http\Controllers\Viewer\ViewerZoneReportController::class, 'show'])->name('show');
+        });
+
+        Route::get('zone-risk-shortcut', [\App\Http\Controllers\Viewer\ViewerZoneReportController::class, 'index'])->name('zone_risk');
+    });
+});
+
 
 Route::middleware(['auth', 'role:accountant'])->prefix('accountant')->name('accountant.')->group(function () {
 

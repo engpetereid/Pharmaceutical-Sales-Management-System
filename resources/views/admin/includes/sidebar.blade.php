@@ -165,6 +165,9 @@
                     <li class="{{ request()->routeIs('admin.provinces.*') ? 'active' : '' }}">
                         <a class="menu-item" href="{{ route('admin.provinces.index') }}">المحافظات</a>
                     </li>
+                    <li class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                        <a class="menu-item" href="{{ route('admin.users.index') }}">المستخدمين</a>
+                    </li>
                     <li class="{{ request()->routeIs('admin.centers.*') ? 'active' : '' }}">
                         <a class="menu-item" href="{{ route('admin.centers.index') }}">المراكز</a>
                     </li>
