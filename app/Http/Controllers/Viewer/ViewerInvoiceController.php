@@ -53,46 +53,99 @@ class ViewerInvoiceController extends Controller
     public function export(Request $request)
     {
         $query = $this->getFilteredQuery($request);
+
+        // إذا كان التصدير تفصيلي، نحتاج لجلب بيانات الأدوية
+        if ($request->export_type == 'details') {
+            $query->with(['details.drug']);
+        }
+
         $invoices = $query->latest('invoice_date')->get();
 
-        $filename = "invoices_report_" . date('Y-m-d') . ".csv";
+        if ($request->export_type == 'details') {
+            $filename = "invoices_details_report_" . date('Y-m-d') . ".csv";
 
-        $callback = function () use ($invoices) {
-            $file = fopen('php://output', 'w');
-            fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
-
-            fputcsv($file, [
-                'رقم الفاتورة', 'التاريخ', 'الصيدلية', 'المركز', 'المنطقة',
-                'الأطباء', 'المندوب', 'الإجمالي (جمهور)', 'الصافي', 'المدفوع', 'المتبقي', 'الحالة'
-            ]);
-
-            foreach ($invoices as $invoice) {
-                $statusText = match ($invoice->status) {
-                    1 => 'مدفوع',
-                    2 => 'آجل',
-                    3 => 'جزئي',
-                    default => '-'
-                };
-
-                $doctorsNames = $invoice->doctors->pluck('name')->implode(' - ') ?: '-';
+            $callback = function () use ($invoices) {
+                $file = fopen('php://output', 'w');
+                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
                 fputcsv($file, [
-                    $invoice->serial_number ?? $invoice->id,
-                    $invoice->invoice_date,
-                    $invoice->pharmacist->name ?? '-',
-                    $invoice->pharmacist->center->name ?? '-',
-                    $invoice->pharmacist->center->zone->name ?? '-',
-                    $doctorsNames,
-                    $invoice->representative->name ?? '-',
-                    $invoice->total_amount,
-                    $invoice->final_total,
-                    $invoice->paid_amount,
-                    $invoice->remaining_amount,
-                    $statusText
+                    'رقم الفاتورة', 'التاريخ', 'الصيدلية', 'المركز',
+                    'الأدوية وتفاصيلها', 'الإجمالي (جمهور)', 'الصافي', 'المدفوع', 'المتبقي', 'حالة الفاتورة'
                 ]);
-            }
-            fclose($file);
-        };
+
+                foreach ($invoices as $invoice) {
+                    $statusText = match ($invoice->status) {
+                        1 => 'مدفوع',
+                        2 => 'آجل',
+                        3 => 'جزئي',
+                        default => '-'
+                    };
+
+                    $drugsList = [];
+                    foreach ($invoice->details as $detail) {
+                        $drugName = $detail->drug->name ?? 'صنف غير معروف';
+                        // تجميع بيانات الصنف في سطر نصي واحد
+                        $drugsList[] = "- {$drugName} (الكمية: {$detail->quantity} | السعر: {$detail->unit_price} | الخصم: {$detail->pharmacist_discount_percentage}% | الإجمالي: {$detail->row_total})";
+                    }
+                    // دمج جميع الأصناف بفواصل أسطر لتظهر داخل خلية واحدة في الإكسيل
+                    $drugsString = implode("\n", $drugsList);
+
+                    fputcsv($file, [
+                        $invoice->serial_number ?? $invoice->id,
+                        $invoice->invoice_date,
+                        $invoice->pharmacist->name ?? '-',
+                        $invoice->pharmacist->center->name ?? '-',
+                        $drugsString,
+                        $invoice->total_amount,
+                        $invoice->final_total,
+                        $invoice->paid_amount,
+                        $invoice->remaining_amount,
+                        $statusText
+                    ]);
+                }
+                fclose($file);
+            };
+        } else {
+            $filename = "invoices_summary_report_" . date('Y-m-d') . ".csv";
+
+            $callback = function () use ($invoices) {
+                $file = fopen('php://output', 'w');
+                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+                fputcsv($file, [
+                    'رقم الفاتورة', 'التاريخ', 'الصيدلية', 'المركز', 'المنطقة',
+                    'الأطباء', 'المندوب', 'الإجمالي (جمهور)', 'الصافي', 'المدفوع', 'المتبقي', 'الحالة'
+                ]);
+
+                foreach ($invoices as $invoice) {
+                    $statusText = match ($invoice->status) {
+                        1 => 'مدفوع',
+                        2 => 'آجل',
+                        3 => 'جزئي',
+                        default => '-'
+                    };
+
+                    $doctorsNames = $invoice->doctors->pluck('name')->implode(' - ') ?: '-';
+                    $zoneName = $invoice->pharmacist?->center?->zones?->first()?->name ?? '-';
+
+                    fputcsv($file, [
+                        $invoice->serial_number ?? $invoice->id,
+                        $invoice->invoice_date,
+                        $invoice->pharmacist->name ?? '-',
+                        $invoice->pharmacist->center->name ?? '-',
+                        $zoneName,
+                        $doctorsNames,
+                        $invoice->representative->name ?? '-',
+                        $invoice->total_amount,
+                        $invoice->final_total,
+                        $invoice->paid_amount,
+                        $invoice->remaining_amount,
+                        $statusText
+                    ]);
+                }
+                fclose($file);
+            };
+        }
 
         return response()->stream($callback, 200, [
             "Content-Type" => "text/csv",
@@ -102,7 +155,6 @@ class ViewerInvoiceController extends Controller
             "Expires" => "0"
         ]);
     }
-
 
     public function show(Invoice $invoice)
     {

@@ -273,8 +273,12 @@
                                             <i class="ft-filter"></i> تصفية
                                         </button>
 
-                                        <button type="submit" formaction="{{ route('viewer.invoices.export') }}" class="mr-1 btn btn-success flex-grow-1">
-                                            <i class="la la-file-excel-o"></i> Excel
+                                        <button type="submit" formaction="{{ route('viewer.invoices.export') }}" name="export_type" value="summary" class="mr-1 btn btn-success flex-grow-1" title="تصدير ملخص الفواتير">
+                                            <i class="la la-file-excel-o"></i> Excel (عام)
+                                        </button>
+
+                                        <button type="submit" formaction="{{ route('viewer.invoices.export') }}" name="export_type" value="details" class="mr-1 btn btn-info flex-grow-1" title="تصدير الفواتير بتفاصيل الأدوية">
+                                            <i class="la la-list-alt"></i> Excel (تفصيلي)
                                         </button>
 
                                         <button type="button" onclick="window.print()" class="mr-1 btn btn-secondary flex-grow-1">
