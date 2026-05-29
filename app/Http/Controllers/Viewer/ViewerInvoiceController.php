@@ -64,15 +64,35 @@ class ViewerInvoiceController extends Controller
         if ($request->export_type == 'details') {
             $filename = "invoices_details_report_" . date('Y-m-d') . ".csv";
 
-            $callback = function () use ($invoices) {
+            // استخراج جميع الأدوية الفريدة من الفواتير لعمل أعمدة ديناميكية
+            $uniqueDrugs = [];
+            foreach ($invoices as $invoice) {
+                foreach ($invoice->details as $detail) {
+                    if ($detail->drug) {
+                        $uniqueDrugs[$detail->drug_id] = $detail->drug->name;
+                    }
+                }
+            }
+            // ترتيب الأدوية أبجدياً للحفاظ على ترتيب الأعمدة
+            asort($uniqueDrugs);
+
+            $callback = function () use ($invoices, $uniqueDrugs) {
                 $file = fopen('php://output', 'w');
-                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // لدعم اللغة العربية
 
-                fputcsv($file, [
-                    'رقم الفاتورة', 'التاريخ', 'الصيدلية', 'المركز',
-                    'الأدوية وتفاصيلها', 'الإجمالي (جمهور)', 'الصافي', 'المدفوع', 'المتبقي', 'حالة الفاتورة'
-                ]);
+                // 1. بناء صف العناوين (الهيدر)
+                $headers = ['رقم الفاتورة', 'التاريخ', 'الصيدلية', 'المركز'];
 
+                foreach ($uniqueDrugs as $drugId => $drugName) {
+                    $headers[] = $drugName; // عمود للكمية
+                    $headers[] = 'خصم ' . $drugName . ' %'; // عمود للخصم
+                }
+
+                array_push($headers, 'الإجمالي (الصافي)', 'المدفوع', 'المتبقي', 'حالة الفاتورة');
+
+                fputcsv($file, $headers);
+
+                // 2. إدخال بيانات الفواتير
                 foreach ($invoices as $invoice) {
                     $statusText = match ($invoice->status) {
                         1 => 'مدفوع',
@@ -81,31 +101,45 @@ class ViewerInvoiceController extends Controller
                         default => '-'
                     };
 
-                    $drugsList = [];
+                    // مصفوفة للوصول السريع لتفاصيل الفاتورة حسب الـ drug_id
+                    $detailsMap = [];
                     foreach ($invoice->details as $detail) {
-                        $drugName = $detail->drug->name ?? 'صنف غير معروف';
-                        // تجميع بيانات الصنف في سطر نصي واحد
-                        $drugsList[] = "- {$drugName} (الكمية: {$detail->quantity} | السعر: {$detail->unit_price} | الخصم: {$detail->pharmacist_discount_percentage}% | الإجمالي: {$detail->row_total})";
+                        $detailsMap[$detail->drug_id] = $detail;
                     }
-                    // دمج جميع الأصناف بفواصل أسطر لتظهر داخل خلية واحدة في الإكسيل
-                    $drugsString = implode("\n", $drugsList);
 
-                    fputcsv($file, [
+                    // البيانات الأساسية للفاتورة
+                    $row = [
                         $invoice->serial_number ?? $invoice->id,
                         $invoice->invoice_date,
                         $invoice->pharmacist->name ?? '-',
                         $invoice->pharmacist->center->name ?? '-',
-                        $drugsString,
-                        $invoice->total_amount,
+                    ];
+
+                    // إضافة الكميات والخصومات لكل دواء
+                    foreach ($uniqueDrugs as $drugId => $drugName) {
+                        if (isset($detailsMap[$drugId])) {
+                            $row[] = $detailsMap[$drugId]->quantity; // الكمية
+                            $row[] = $detailsMap[$drugId]->pharmacist_discount_percentage . '%'; // الخصم
+                        } else {
+                            $row[] = '0'; // الكمية صفر إذا لم يكن الدواء موجوداً
+                            $row[] = '-'; // لا يوجد خصم
+                        }
+                    }
+
+                    // إضافة الإجماليات المالية الكلية للفاتورة في النهاية
+                    array_push($row,
                         $invoice->final_total,
                         $invoice->paid_amount,
                         $invoice->remaining_amount,
                         $statusText
-                    ]);
+                    );
+
+                    fputcsv($file, $row);
                 }
                 fclose($file);
             };
         } else {
+            // التصدير العادي (ملخص)
             $filename = "invoices_summary_report_" . date('Y-m-d') . ".csv";
 
             $callback = function () use ($invoices) {
