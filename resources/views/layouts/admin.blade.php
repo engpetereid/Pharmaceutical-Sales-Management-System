@@ -149,8 +149,7 @@
 @include('admin.includes.header')
 @include('admin.includes.sidebar')
 @yield('content')
-{{--stop work--}}
-{{}}
+
 
 
 

@@ -149,8 +149,6 @@
 @include('viewer.includes.header')
 @include('viewer.includes.sidebar')
 @yield('content')
-{{--stop work--}}
-{{}}
 
 @include('viewer.includes.footer')
 <script src="{{asset('assets/admin/vendors/js/vendors.min.js')}}" type="text/javascript"></script>
