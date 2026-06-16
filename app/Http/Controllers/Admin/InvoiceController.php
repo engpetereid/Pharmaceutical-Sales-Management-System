@@ -685,7 +685,7 @@ class InvoiceController extends Controller
                 // إذا كان الاتفاق عام، أو الصنف من ضمن أدوية الاتفاق المحددة
                 if ($isGeneralDeal || in_array($detail->drug_id, $includedDrugIds)) {
                     // تم التعديل لاحتساب قيمة الصنف بعد الخصم (row_total) بدلاً من السعر الجمهوري
-                    $dealContribution += $detail->row_total;
+                    $dealContribution += $detail->quantity*$detail->unit_price;
                 }
             }
 
