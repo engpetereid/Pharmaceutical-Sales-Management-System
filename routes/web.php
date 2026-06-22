@@ -120,10 +120,82 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
         Route::get('zone-risk-shortcut', [ZoneReportController::class, 'index'])->name('zone_risk');
     });
+
 });
 
 
+Route::get('/admin/fix-deals', function () {
+    $log = [];
+    $totalFixed = 0;
 
+    \Illuminate\Support\Facades\DB::beginTransaction();
+    try {
+        // جلب جميع الاتفاقات مع الفواتير والأدوية
+        $deals = \App\Models\DoctorDeal::with(['invoices.details', 'drugs'])->get();
+
+        foreach ($deals as $deal) {
+            $dealDrugIds = $deal->drugs->pluck('id')->toArray();
+            $isGeneralDeal = empty($dealDrugIds);
+
+            $dealDifferenceTotal = 0;
+
+            foreach ($deal->invoices as $invoice) {
+                $correctContribution = 0;
+
+                // إعادة الحساب بالسعر الجمهوري
+                foreach ($invoice->details as $detail) {
+                    if ($isGeneralDeal || in_array($detail->drug_id, $dealDrugIds)) {
+                        $correctContribution += ($detail->quantity * $detail->unit_price);
+                    }
+                }
+
+                $oldContribution = $invoice->pivot->contribution_amount;
+
+                // إذا كان هناك اختلاف بين الحساب القديم والجديد
+                if (round($correctContribution, 2) != round($oldContribution, 2)) {
+                    // 1. تحديث جدول الربط (Pivot)
+                    $deal->invoices()->updateExistingPivot($invoice->id, [
+                        'contribution_amount' => $correctContribution
+                    ]);
+
+                    // حساب الفرق لتعديل إجمالي التارجت المحقق لاحقاً
+                    $difference = $correctContribution - $oldContribution;
+                    $dealDifferenceTotal += $difference;
+
+                    // تسجيل العملية
+                    $log[] = "Deal ID: {$deal->id} | Invoice #{$invoice->serial_number} | Old: {$oldContribution} | New: {$correctContribution} | Diff: {$difference}";
+                    $totalFixed++;
+                }
+            }
+
+            // 2. تحديث إجمالي التارجت المحقق في الاتفاق بناءً على مجموع الفروقات
+            if ($dealDifferenceTotal != 0) {
+                $deal->increment('achieved_amount', $dealDifferenceTotal);
+            }
+        }
+
+        \Illuminate\Support\Facades\DB::commit();
+
+        // 3. حفظ اللوج في ملف داخل مجلد storage/app/
+        $logContent = "=== سجل الفواتير التي تم إصلاحها ===\n";
+        $logContent .= "إجمالي الفواتير المعدلة: {$totalFixed}\n\n";
+        $logContent .= implode("\n", $log);
+
+        \Illuminate\Support\Facades\Storage::put('fixed_invoices.txt', $logContent);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم مراجعة وتحديث الفواتير بنجاح.',
+            'fixed_count' => $totalFixed,
+            'log_file_path' => storage_path('app/fixed_invoices.txt'),
+            'details' => $log
+        ]);
+
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\DB::rollBack();
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+})->middleware(['auth', 'role:admin']);
 
 
 

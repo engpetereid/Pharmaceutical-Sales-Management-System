@@ -676,7 +676,6 @@ class InvoiceController extends Controller
         foreach ($deals as $deal) {
             $includedDrugIds = $deal->drugs->pluck('id')->toArray();
 
-            // تم إضافة متغير للتحقق إذا كان الاتفاق "عام" لا يشمل أدوية محددة
             $isGeneralDeal = empty($includedDrugIds);
 
             $dealContribution = 0;
@@ -684,7 +683,6 @@ class InvoiceController extends Controller
             foreach ($invoice->details as $detail) {
                 // إذا كان الاتفاق عام، أو الصنف من ضمن أدوية الاتفاق المحددة
                 if ($isGeneralDeal || in_array($detail->drug_id, $includedDrugIds)) {
-                    // تم التعديل لاحتساب قيمة الصنف بعد الخصم (row_total) بدلاً من السعر الجمهوري
                     $dealContribution += $detail->quantity*$detail->unit_price;
                 }
             }
