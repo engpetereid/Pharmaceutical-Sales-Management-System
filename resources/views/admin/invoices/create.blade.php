@@ -178,16 +178,21 @@
                                     </div>
 
                                     <div class="col-md-6 mb-2">
-                                        <label class="font-weight-bold">الأطباء</label>
+                                        <label class="font-weight-bold">الأطباء الموجهين (اختياري)</label>
                                         <div class="border rounded bg-light p-2" style="height: 100px; overflow-y: auto;">
                                             <div x-show="availableDoctors.length === 0" class="text-muted small mt-1">
                                                 اختر صيدلية أولاً لظهور الأطباء أصحاب الاتفاقيات.
                                             </div>
                                             <template x-for="doctor in availableDoctors" :key="doctor.id">
-                                                <label class="d-flex align-items-center mb-1 cursor-pointer">
-                                                    <input type="checkbox" name="doctor_ids[]" :value="doctor.id" x-model="selectedDoctorIds" class="mr-2" style="transform: scale(1.2);">
-                                                    <span x-text="doctor.name" class="font-weight-bold text-dark"></span>
-                                                    <span class="badge badge-light ml-auto text-muted font-small-2" x-text="doctor.speciality"></span>
+                                                <label class="d-flex align-items-start mb-2 cursor-pointer p-1 border-bottom">
+                                                    <input type="checkbox" name="doctor_ids[]" :value="doctor.id" x-model="selectedDoctorIds" class="mr-2 mt-1" style="transform: scale(1.2);">
+                                                    <div class="d-flex flex-column w-100">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <span x-text="doctor.name" class="font-weight-bold text-dark"></span>
+                                                            <span class="badge badge-light ml-auto text-muted font-small-2" x-text="doctor.speciality"></span>
+                                                        </div>
+                                                        <small class=" mt-1" x-text="'الأدوية : ' + doctor.deal_text"></small>
+                                                    </div>
                                                 </label>
                                             </template>
                                         </div>
@@ -554,11 +559,25 @@
 
                     const doctorsMap = new Map();
                     pharmacist.deals.forEach(deal => {
-                        if (deal.doctor && !doctorsMap.has(deal.doctor.id)) {
-                            doctorsMap.set(deal.doctor.id, deal.doctor);
+                        if (deal.doctor) {
+                            let docInfo = doctorsMap.get(deal.doctor.id);
+                            if (!docInfo) {
+                                docInfo = { ...deal.doctor, deal_info: [] };
+                                doctorsMap.set(deal.doctor.id, docInfo);
+                            }
+
+                            if (deal.is_general) {
+                                docInfo.deal_info.push('عام (كل الأصناف)');
+                            } else if (deal.drug_names && deal.drug_names.length > 0) {
+                                docInfo.deal_info.push(deal.drug_names.join('، '));
+                            }
                         }
                     });
-                    return Array.from(doctorsMap.values());
+
+                    return Array.from(doctorsMap.values()).map(doc => {
+                        doc.deal_text = doc.deal_info.length > 0 ? doc.deal_info.join(' | ') : 'محدد ببعض الأصناف';
+                        return doc;
+                    });
                 },
 
                 // فلترة الأدوية بناءً على الأطباء المختارين واتفاقياتهم

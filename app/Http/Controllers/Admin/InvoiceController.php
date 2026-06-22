@@ -517,6 +517,9 @@ class InvoiceController extends Controller
                     return [
                         'id'         => $deal->id,
                         'drugs'      => $deal->drugs->pluck('id')->toArray(),
+
+                        'drug_names' => $deal->drugs->pluck('name')->toArray(),
+
                         'is_general' => $deal->drugs->isEmpty(),
                         'doctor'     => [
                             'id'              => $deal->doctor->id,

@@ -198,16 +198,21 @@
                                     </div>
 
                                     <div class="mb-2 col-md-6">
-                                        <label class="font-weight-bold">الأطباء</label>
+                                        <label class="font-weight-bold">الأطباء (اختياري)</label>
                                         <div class="p-2 border rounded bg-light" style="height: 100px; overflow-y: auto;">
                                             <div x-show="availableDoctors.length === 0" class="mt-1 small text-muted">
                                                 اختر صيدلية أولاً لظهور الأطباء .
                                             </div>
                                             <template x-for="doctor in availableDoctors" :key="doctor.id">
-                                                <label class="mb-1 cursor-pointer d-flex align-items-center">
-                                                    <input type="checkbox" name="doctor_ids[]" :value="doctor.id.toString()" x-model="selectedDoctorIds" class="mr-2" style="transform: scale(1.2);">
-                                                    <span x-text="doctor.name" class="font-weight-bold text-dark"></span>
-                                                    <span class="ml-auto badge badge-light text-muted font-small-2" x-text="doctor.speciality"></span>
+                                                <label class="d-flex align-items-start mb-2 cursor-pointer p-1 border-bottom">
+                                                    <input type="checkbox" name="doctor_ids[]" :value="doctor.id.toString()" x-model="selectedDoctorIds" class="mr-2 mt-1" style="transform: scale(1.2);">
+                                                    <div class="d-flex flex-column w-100">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <span x-text="doctor.name" class="font-weight-bold text-dark"></span>
+                                                            <span class="ml-auto badge badge-light text-muted font-small-2" x-text="doctor.speciality"></span>
+                                                        </div>
+                                                        <small class="mt-1" x-text="'الأدوية : ' + doctor.deal_text"></small>
+                                                    </div>
                                                 </label>
                                             </template>
                                         </div>
@@ -353,7 +358,7 @@
                                                      x-cloak>
                                                     <label class="text-muted small">المبلغ المدفوع</label>
                                                     <div class="input-group">
-                                                        <input type="number" step="0.01" name="paid_amount" disabled
+                                                        <input type="number" step="0.01" name="paid_amount"
                                                                class="form-control font-weight-bold"
                                                                :class="{'text-success': payment_status == 1, 'bg-white': payment_status == 3}"
                                                                x-model="paid_amount" @input="validatePaidAmount()"
@@ -651,11 +656,25 @@
 
                     const doctorsMap = new Map();
                     pharmacist.deals.forEach(deal => {
-                        if (deal.doctor && !doctorsMap.has(deal.doctor.id)) {
-                            doctorsMap.set(deal.doctor.id, deal.doctor);
+                        if (deal.doctor) {
+                            let docInfo = doctorsMap.get(deal.doctor.id);
+                            if (!docInfo) {
+                                docInfo = { ...deal.doctor, deal_info: [] };
+                                doctorsMap.set(deal.doctor.id, docInfo);
+                            }
+
+                            if (deal.is_general) {
+                                docInfo.deal_info.push('عام (كل الأصناف)');
+                            } else if (deal.drug_names && deal.drug_names.length > 0) {
+                                docInfo.deal_info.push(deal.drug_names.join('، '));
+                            }
                         }
                     });
-                    return Array.from(doctorsMap.values());
+
+                    return Array.from(doctorsMap.values()).map(doc => {
+                        doc.deal_text = doc.deal_info.length > 0 ? doc.deal_info.join(' | ') : 'محدد ببعض الأصناف';
+                        return doc;
+                    });
                 },
 
                 get availableDrugs() {
