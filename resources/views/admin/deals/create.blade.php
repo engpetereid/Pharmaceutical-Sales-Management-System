@@ -12,6 +12,7 @@
         .checkbox-item:hover { background-color: #e6f0ff; }
         .checkbox-item input { margin-left: 10px; transform: scale(1.2); }
         .commission-display { font-size: 1.2rem; font-weight: bold; color: #28a745; background: #e8f5e9; padding: 5px 10px; border-radius: 5px; display: block; text-align: center; margin-top: 5px; }
+        .badge-center { font-size: 0.75rem; background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
     </style>
 @endsection
 
@@ -42,14 +43,18 @@
                                                     <option value="{{ $doc->id }}">{{ $doc->name }}</option>
                                                 @endforeach
                                             </select>
+                                            <small class="text-muted mt-1 d-block" x-show="doctorCenterName">المركز: <span x-text="doctorCenterName" class="text-bold-600 text-info"></span></small>
                                         </div>
                                     </div>
 
                                     <div class="col-md-3">
                                         <div class="form-group">
                                             <label>التارجت المطلوب (ج.م) <span class="text-danger">*</span></label>
-                                            <input type="number" name="target_amount" class="form-control font-weight-bold"
-                                                   x-model="target" @input="calculateCommission" placeholder="0" >
+                                            <div class="input-group">
+                                                <input type="number" name="target_amount" class="form-control font-weight-bold"
+                                                       x-model="target" @input="calculateCommission" placeholder="0" >
+                                                <div class="input-group-append"><span class="input-group-text">ج.م</span></div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -105,20 +110,25 @@
 
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h4 class="form-section d-flex justify-content-between">
+                                        <h4 class="form-section d-flex justify-content-between align-items-center">
                                             <span><i class="la la-hospital-o"></i> الصيدليات المشمولة <span class="text-danger">*</span></span>
-                                            <span class="badge badge-info" x-show="selectedDoctorId && doctorCenterName" x-text="'فلتر المركز: ' + doctorCenterName"></span>
                                         </h4>
+
                                         <div class="form-group">
                                             <input type="text" x-model="pharmaSearch" class="form-control mb-2" placeholder="بحث في الصيدليات...">
 
                                             <div class="multi-select-box">
+                                                <!-- حقول مخفية لضمان إرسال جميع الصيدليات -->
+                                                <template x-for="id in selectedPharmacies" :key="'hidden_pharma_' + id">
+                                                    <input type="hidden" name="pharmacists[]" :value="id">
+                                                </template>
+
                                                 <template x-for="pharma in filteredPharmacies" :key="pharma.id">
                                                     <label class="checkbox-item">
-                                                        <input type="checkbox" name="pharmacists[]" :value="pharma.id">
+                                                        <input type="checkbox" :value="pharma.id.toString()" x-model="selectedPharmacies">
                                                         <div class="d-inline-block ml-1">
                                                             <span x-text="pharma.name" class="d-block font-weight-bold"></span>
-                                                            <small class="text-muted" x-text="pharma.center ? pharma.center.name : '-'"></small>
+                                                            <span class="badge-center" x-show="pharma.center" x-text="pharma.center ? pharma.center.name : '-'"></span>
                                                         </div>
                                                     </label>
                                                 </template>
@@ -131,6 +141,7 @@
                                         </div>
                                     </div>
 
+                                    {{-- الأدوية --}}
                                     <div class="col-md-6">
                                         <h4 class="form-section"><i class="la la-medkit"></i> الأدوية المشمولة (Scope)</h4>
                                         <div class="form-group">
@@ -139,15 +150,21 @@
                                             <div class="multi-select-box">
                                                 <p class="text-muted font-small-3 mb-2 px-1"><i class="ft-info"></i> عدم اختيار أي دواء يعني أن الاتفاق يشمل <strong>جميع الأصناف</strong>.</p>
 
+                                                <!-- حقول مخفية لضمان إرسال جميع الأدوية -->
+                                                <template x-for="id in selectedDrugs" :key="'hidden_drug_' + id">
+                                                    <input type="hidden" name="drugs[]" :value="id">
+                                                </template>
+
                                                 <template x-for="drug in filteredDrugs" :key="drug.id">
                                                     <label class="checkbox-item">
-                                                        <input type="checkbox" name="drugs[]" :value="drug.id">
+                                                        <input type="checkbox" :value="drug.id.toString()" x-model="selectedDrugs">
                                                         <div class="d-inline-block ml-1 w-100">
                                                             <span x-text="drug.name"></span>
                                                             <span class="badge badge-sm float-right" :class="drug.line == 1 ? 'badge-info' : 'badge-warning'" x-text="'Line ' + drug.line"></span>
                                                         </div>
                                                     </label>
                                                 </template>
+                                                <div x-show="filteredDrugs.length === 0" class="text-center text-muted mt-2">لا توجد نتائج</div>
                                             </div>
                                         </div>
                                     </div>
@@ -174,6 +191,9 @@
                 drugs: @json($drugs),
 
                 // المتغيرات
+                selectedPharmacies: [],
+                selectedDrugs: [],
+
                 selectedDoctorId: '',
                 doctorCenterName: '',
                 pharmaSearch: '',
@@ -190,6 +210,10 @@
                     const that = this;
                     $('#doctor_select').on('change', function (e) {
                         that.selectedDoctorId = $(this).val();
+
+                        // تفريغ الصيدليات عند تغيير الطبيب
+                        that.selectedPharmacies = [];
+
                         that.updateDoctorInfo();
                     });
                 },
@@ -226,7 +250,12 @@
                         list = list.filter(p => p.name.toLowerCase().includes(this.pharmaSearch.toLowerCase()));
                     }
 
-                    return list;
+                    // ترتيب: المختار فى الاول
+                    return list.sort((a, b) => {
+                        const aSelected = this.selectedPharmacies.includes(a.id.toString());
+                        const bSelected = this.selectedPharmacies.includes(b.id.toString());
+                        return (aSelected === bSelected) ? 0 : aSelected ? -1 : 1;
+                    });
                 },
 
                 get filteredDrugs() {

@@ -132,10 +132,15 @@
                                                 <input type="text" x-model="pharmaSearch" class="mb-2 form-control" placeholder="بحث في الصيدليات...">
 
                                                 <div class="multi-select-box">
+                                                    <!-- حقول مخفية لضمان إرسال جميع الصيدليات المختارة حتى لو تم إخفاؤها بالفلتر -->
+                                                    <template x-for="id in selectedPharmacies" :key="'hidden_pharma_' + id">
+                                                        <input type="hidden" name="pharmacists[]" :value="id">
+                                                    </template>
+
                                                     <template x-for="pharma in filteredPharmacies" :key="pharma.id">
                                                         <label class="checkbox-item">
-                                                            <input type="checkbox" name="pharmacists[]" :value="pharma.id"
-                                                                   :checked="selectedPharmacies.includes(pharma.id)">
+                                                            <!-- تم حذف name="pharmacists[]" وربطها بـ x-model مباشرة -->
+                                                            <input type="checkbox" :value="pharma.id" x-model="selectedPharmacies">
                                                             <div class="ml-1 d-inline-block">
                                                                 <span x-text="pharma.name" class="d-block font-weight-bold"></span>
                                                                 <span class="badge-center" x-show="pharma.center" x-text="pharma.center ? pharma.center.name : '-'"></span>
@@ -150,17 +155,22 @@
 
                                         {{-- الأدوية --}}
                                         <div class="col-md-6">
-                                            <h4 class="form-section"><i class="la la-medkit"></i> الأدوية المشمولة (Scope)</h4>
+                                            <h4 class="form-section"><i class="la la-medkit"></i> الأدوية المشمولة</h4>
                                             <div class="form-group">
                                                 <input type="text" x-model="drugSearch" class="mb-2 form-control" placeholder="بحث في الأدوية...">
 
                                                 <div class="multi-select-box">
                                                     <p class="px-1 mb-2 text-muted font-small-3"><i class="ft-info"></i> عدم اختيار أي دواء يعني أن الاتفاق يشمل <strong>جميع الأصناف</strong>.</p>
 
+                                                    <!-- حقول مخفية لضمان إرسال جميع الأدوية المختارة حتى لو تم إخفاؤها بالبحث -->
+                                                    <template x-for="id in selectedDrugs" :key="'hidden_drug_' + id">
+                                                        <input type="hidden" name="drugs[]" :value="id">
+                                                    </template>
+
                                                     <template x-for="drug in filteredDrugs" :key="drug.id">
                                                         <label class="checkbox-item">
-                                                            <input type="checkbox" name="drugs[]" :value="drug.id"
-                                                                   :checked="selectedDrugs.includes(drug.id)">
+                                                            <!-- تم حذف name="drugs[]" وربطها بـ x-model مباشرة -->
+                                                            <input type="checkbox" :value="drug.id" x-model="selectedDrugs">
                                                             <div class="ml-1 d-inline-block w-100">
                                                                 <span x-text="drug.name"></span>
                                                                 <span class="float-right badge badge-sm" :class="drug.line == 1 ? 'badge-info' : 'badge-warning'" x-text="'Line ' + drug.line"></span>
@@ -172,6 +182,7 @@
                                             </div>
                                         </div>
                                     </div>
+
 
                                     <div class="mt-3 text-left form-actions">
                                         <button type="button" class="mr-1 btn btn-secondary" onclick="history.back()">إلغاء</button>
@@ -193,9 +204,9 @@
                 pharmacists: @json($pharmacists),
                 drugs: @json($drugs),
 
-                // البيانات
-                selectedPharmacies: @json($deal->pharmacists->pluck('id')),
-                selectedDrugs: @json($deal->drugs->pluck('id')),
+                // التعديل الأهم: تحويل الأرقام لنصوص لتتطابق مع الـ Checkbox بدقة
+                selectedPharmacies: @json($deal->pharmacists->pluck('id')).map(String),
+                selectedDrugs: @json($deal->drugs->pluck('id')).map(String),
 
                 // بيانات الاتفاق
                 currentDoctorId: '{{ $deal->doctor_id }}',
