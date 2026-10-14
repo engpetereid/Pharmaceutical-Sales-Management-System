@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Pharmacist extends Model
 {
-    use HasFactory;
+    use HasFactory, Auditable;
     protected $fillable = ['name', 'phone', 'address', 'center_id'];
 
     public function center()

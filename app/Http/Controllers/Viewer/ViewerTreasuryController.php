@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Viewer;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\InvoicePayment;
 use App\Models\GeneralExpense;
+use App\Models\InvoicePayment;
 use App\Models\Zone;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class ViewerTreasuryController extends Controller
 {
     public function index(Request $request)
     {
         // 1. تجهيز الاستعلامات الأساسية
-        $paymentsQuery = InvoicePayment::with(['invoice.pharmacist.center.zones']);
+        $paymentsQuery = InvoicePayment::where('amount', '>', 0)->with(['invoice.pharmacist.center.zones']);
         $generalExpensesQuery = GeneralExpense::query();
 
         // 2. تطبيق الفلاتر
@@ -36,7 +36,7 @@ class ViewerTreasuryController extends Controller
         if ($request->filled('zone_id')) {
             $zoneIds = (array) $request->zone_id;
 
-            $paymentsQuery->whereHas('invoice.pharmacist.center.zones', function($q) use ($zoneIds) {
+            $paymentsQuery->whereHas('invoice.pharmacist.center.zones', function ($q) use ($zoneIds) {
                 $q->whereIn('zones.id', $zoneIds);
             });
         }
@@ -74,13 +74,13 @@ class ViewerTreasuryController extends Controller
 
     private function exportExcel($payments, $generalExpenses, $totalIncome, $totalGeneralExpenses, $totalExpenses, $netBalance, $startDate, $endDate)
     {
-        $filename = "treasury_report_" . date('Y-m-d') . ".csv";
-        $callback = function () use ($payments, $generalExpenses, $totalIncome, $totalGeneralExpenses, $totalExpenses, $netBalance, $startDate, $endDate) {
+        $filename = 'treasury_report_'.date('Y-m-d').'.csv';
+        $callback = function () use ($payments, $generalExpenses, $totalIncome, $totalGeneralExpenses, $netBalance, $startDate, $endDate) {
             $file = fopen('php://output', 'w');
-            fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // لدعم اللغة العربية
+            fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF)); // لدعم اللغة العربية
 
             // الترويسة
-            $period = ($startDate || $endDate) ? "الفترة: من $startDate إلى $endDate" : "حتى الآن (كل البيانات)";
+            $period = ($startDate || $endDate) ? "الفترة: من $startDate إلى $endDate" : 'حتى الآن (كل البيانات)';
             fputcsv($file, ['تقرير الخزينة (حركة الأموال)', $period]);
             fputcsv($file, []);
 
@@ -99,7 +99,7 @@ class ViewerTreasuryController extends Controller
                     $payment->payment_date->format('Y-m-d'),
                     $payment->invoice->serial_number ?? $payment->invoice_id,
                     $payment->invoice->pharmacist->name ?? '-',
-                    $payment->amount
+                    $payment->amount,
                 ]);
             }
             fputcsv($file, []);
@@ -111,7 +111,7 @@ class ViewerTreasuryController extends Controller
                 fputcsv($file, [
                     $gExpense->expense_date->format('Y-m-d'),
                     $gExpense->description,
-                    $gExpense->amount
+                    $gExpense->amount,
                 ]);
             }
 
@@ -119,11 +119,11 @@ class ViewerTreasuryController extends Controller
         };
 
         return response()->stream($callback, 200, [
-            "Content-Type" => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma" => "no-cache",
-            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-            "Expires" => "0"
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$filename",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ]);
     }
 }

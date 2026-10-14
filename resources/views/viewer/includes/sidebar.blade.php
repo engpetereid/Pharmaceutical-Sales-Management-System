@@ -43,6 +43,14 @@
                 </a>
             </li>
 
+            {{-- مرتجعات المبيعات --}}
+            <li class="nav-item {{ request()->routeIs('viewer.returns.*') ? 'active' : '' }}">
+                <a href="{{ route('viewer.returns.index') }}">
+                    <i class="ft-corner-down-left"></i>
+                    <span class="menu-title">مرتجعات المبيعات</span>
+                </a>
+            </li>
+
             <li class="nav-item {{ request()->routeIs('viewer.deals.*') ? 'active' : '' }}">
                 <a href="{{ route('viewer.deals.index') }}">
                     <i class="la la-google"></i>
@@ -131,7 +139,7 @@
                 <a href="{{ route('viewer.representatives.index') }}"><i class="la la-briefcase"></i><span class="menu-title">المناديب</span></a>
             </li>
 
-            <li class="nav-item has-sub {{ request()->routeIs('viewer.drugs.*') || request()->routeIs('viewer.provinces.*') || request()->routeIs('viewer.centers.*') || request()->routeIs('viewer.warehouses.*') ? 'open' : '' }}">
+            <li class="nav-item has-sub {{ request()->routeIs('viewer.drugs.*') || request()->routeIs('viewer.provinces.*') || request()->routeIs('viewer.centers.*') || request()->routeIs('viewer.warehouses.*') || request()->routeIs('viewer.audit-logs.*') ? 'open' : '' }}">
                 <a href="#"><i class="la la-cogs"></i><span class="menu-title">إعدادات النظام</span></a>
                 <ul class="menu-content">
                     <li class="{{ request()->routeIs('viewer.warehouses.*') ? 'active' : '' }}">
@@ -145,6 +153,11 @@
                     </li>
                     <li class="{{ request()->routeIs('viewer.centers.*') ? 'active' : '' }}">
                         <a class="menu-item" href="{{ route('viewer.centers.index') }}">المراكز</a>
+                    </li>
+                    <li class="{{ request()->routeIs('viewer.audit-logs.*') ? 'active' : '' }}">
+                        <a class="menu-item" href="{{ route('viewer.audit-logs.index') }}">
+                            <i class="ft-shield"></i> سجل العمليات (Audit Log)
+                        </a>
                     </li>
                 </ul>
             </li>

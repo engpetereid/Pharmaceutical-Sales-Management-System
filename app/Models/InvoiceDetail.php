@@ -12,10 +12,12 @@ class InvoiceDetail extends Model
         'invoice_id',
         'drug_id',
         'quantity',
+        'returned_quantity',
         'unit_price',
         'pharmacist_discount_percentage',
         'row_total'
     ];
+
     public function invoice(){
         return $this->belongsTo(Invoice::class);
     }
@@ -24,4 +26,18 @@ class InvoiceDetail extends Model
         return $this->belongsTo(Drug::class);
     }
 
+    public function returnItems()
+    {
+        return $this->hasMany(InvoiceReturnItem::class, 'invoice_detail_id');
+    }
+
+    public function getOriginalQuantityAttribute(): int
+    {
+        return (int) ($this->quantity + ($this->returned_quantity ?? 0));
+    }
+
+    public function getAvailableQuantityAttribute(): int
+    {
+        return max(0, (int) $this->quantity);
+    }
 }

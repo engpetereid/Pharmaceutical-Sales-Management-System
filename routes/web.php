@@ -1,28 +1,30 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CenterController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DoctorController;
+use App\Http\Controllers\Admin\DoctorDealController;
 use App\Http\Controllers\Admin\DrugController;
 use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\InvoiceReturnController;
 use App\Http\Controllers\Admin\PharmacistController;
 use App\Http\Controllers\Admin\ProvinceController;
-use App\Http\Controllers\Admin\RepresentativeController;
 use App\Http\Controllers\Admin\ReportController;
-use App\Http\Controllers\Admin\DoctorDealController;
+use App\Http\Controllers\Admin\RepresentativeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WarehouseController;
+use App\Http\Controllers\Admin\ZoneController;
 use App\Http\Controllers\Admin\ZoneExpenseController;
 use App\Http\Controllers\Admin\ZoneReportController;
-use App\Http\Controllers\Admin\ZoneController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\me;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\me;
 
 Route::get('/', function () {
 
-    if (!auth()->check()) {
+    if (! auth()->check()) {
         return redirect()->route('login');
     }
 
@@ -39,7 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('me',[me::class,'index'])->name('me');
+    Route::get('me', [me::class, 'index'])->name('me');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -62,6 +64,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('invoices/{invoice}/payments/{payment}', [\App\Http\Controllers\Admin\InvoiceController::class, 'updatePayment'])->name('invoices.payments.update');
     Route::delete('invoices/{invoice}/payments/{payment}', [\App\Http\Controllers\Admin\InvoiceController::class, 'destroyPayment'])->name('invoices.payments.destroy');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'printPdf'])->name('invoices.pdf');
+
+    // مرتجعات المبيعات
+    Route::get('invoices/{invoice}/return', [InvoiceReturnController::class, 'create'])->name('invoices.returns.create');
+    Route::post('invoices/{invoice}/return', [InvoiceReturnController::class, 'store'])->name('invoices.returns.store');
+    Route::get('returns', [InvoiceReturnController::class, 'index'])->name('returns.index');
+    Route::get('returns/{return}', [InvoiceReturnController::class, 'show'])->name('returns.show');
+    Route::get('returns/{return}/edit', [InvoiceReturnController::class, 'edit'])->name('returns.edit');
+    Route::put('returns/{return}', [InvoiceReturnController::class, 'update'])->name('returns.update');
+    Route::delete('returns/{return}', [InvoiceReturnController::class, 'destroy'])->name('returns.destroy');
+
+    // سجل الرقابة والتدقيق
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show'])->name('audit-logs.show');
+
     Route::get('/dashboard/line/{id}', [DashboardController::class, 'lineDashboard'])->name('dashboard.line');
 
     Route::get('zones/{id}/expenses/create', [ZoneExpenseController::class, 'create'])->name('zones.expenses.create');
@@ -98,7 +114,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/pharmacist/{id}', [ReportController::class, 'showPharmacist'])->name('pharmacist');
         Route::get('/monthly-financials', [\App\Http\Controllers\Admin\ReportController::class, 'monthlyFinancials'])->name('monthly_financials');
 
-
         Route::prefix('representatives')->name('representatives.')->group(function () {
             Route::get('/', [ReportController::class, 'representativesIndex'])->name('index');
             Route::get('/{id}', [ReportController::class, 'showRepresentative'])->name('show');
@@ -122,7 +137,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 
 });
-
 
 Route::get('/admin/fix-deals', function () {
     $log = [];
@@ -155,7 +169,7 @@ Route::get('/admin/fix-deals', function () {
                 if (round($correctContribution, 2) != round($oldContribution, 2)) {
                     // 1. تحديث جدول الربط (Pivot)
                     $deal->invoices()->updateExistingPivot($invoice->id, [
-                        'contribution_amount' => $correctContribution
+                        'contribution_amount' => $correctContribution,
                     ]);
 
                     // حساب الفرق لتعديل إجمالي التارجت المحقق لاحقاً
@@ -188,16 +202,15 @@ Route::get('/admin/fix-deals', function () {
             'message' => 'تم مراجعة وتحديث الفواتير بنجاح.',
             'fixed_count' => $totalFixed,
             'log_file_path' => storage_path('app/fixed_invoices.txt'),
-            'details' => $log
+            'details' => $log,
         ]);
 
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\DB::rollBack();
+
         return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
     }
 })->middleware(['auth', 'role:admin']);
-
-
 
 Route::middleware(['auth', 'role:viewer'])->prefix('viewer')->name('viewer.')->group(function () {
 
@@ -224,12 +237,20 @@ Route::middleware(['auth', 'role:viewer'])->prefix('viewer')->name('viewer.')->g
     Route::get('invoices/{invoice}/payments', [\App\Http\Controllers\Viewer\ViewerInvoiceController::class, 'payments'])->name('invoices.payments');
     Route::get('invoices/{invoice}/pdf', [\App\Http\Controllers\Viewer\ViewerInvoiceController::class, 'printPdf'])->name('invoices.pdf');
 
+    // Sales Returns (read-only)
+    Route::get('returns', [\App\Http\Controllers\Viewer\ViewerInvoiceReturnController::class, 'index'])->name('returns.index');
+    Route::get('returns/{return}', [\App\Http\Controllers\Viewer\ViewerInvoiceReturnController::class, 'show'])->name('returns.show');
+
     // General expenses (read-only)
     Route::get('general-expenses', [\App\Http\Controllers\Viewer\ViewerGeneralExpenseController::class, 'index'])->name('general-expenses.index');
 
     // Financial views
     Route::get('/monthly-financials', [\App\Http\Controllers\Viewer\ViewerReportController::class, 'monthlyFinancials'])->name('monthly_financials');
     Route::get('/treasury', [\App\Http\Controllers\Viewer\ViewerTreasuryController::class, 'index'])->name('treasury.index');
+
+    // Audit Logs (read-only)
+    Route::get('audit-logs', [\App\Http\Controllers\Viewer\ViewerAuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('audit-logs/{auditLog}', [\App\Http\Controllers\Viewer\ViewerAuditLogController::class, 'show'])->name('audit-logs.show');
 
     // Reports (read-only)
     Route::prefix('reports')->name('reports.')->group(function () {
@@ -263,10 +284,6 @@ Route::middleware(['auth', 'role:viewer'])->prefix('viewer')->name('viewer.')->g
     });
 });
 
+Route::middleware(['auth', 'role:accountant'])->prefix('accountant')->name('accountant.')->group(function () {});
 
-Route::middleware(['auth', 'role:accountant'])->prefix('accountant')->name('accountant.')->group(function () {
-
-
-});
-
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

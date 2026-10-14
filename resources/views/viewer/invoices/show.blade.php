@@ -87,7 +87,12 @@
                                     <tr>
                                         <td class="text-center">{{ $index + 1 }}</td>
                                         <td class="font-weight-bold">{{ $item->drug->name ?? 'صنف محذوف' }}</td>
-                                        <td class="text-center">{{ $item->quantity }}</td>
+                                        <td class="text-center">
+                                            <span class="font-weight-bold">{{ $item->quantity }}</span>
+                                            @if($item->returned_quantity > 0)
+                                                <small class="badge badge-warning d-block mt-1">مرتجع: {{ $item->returned_quantity }}</small>
+                                            @endif
+                                        </td>
                                         <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
                                         <td class="text-center">{{ $item->pharmacist_discount_percentage }}%</td>
                                         <td class="text-right font-weight-bold">{{ number_format($item->row_total, 2) }}</td>
@@ -96,6 +101,67 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- سجل المرتجعات إن وجدت -->
+                        @if($invoice->returns && $invoice->returns->count() > 0)
+                            <div class="pt-3 mb-3">
+                                <h5 class="font-weight-bold text-danger mb-2">
+                                    <i class="ft-corner-down-left"></i> سجل المرتجعات الصادرة لهذه الفاتورة
+                                </h5>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>رقم المرتجع</th>
+                                                <th>تاريخ المرتجع</th>
+                                                <th>الأصناف المرتجعة</th>
+                                                <th class="text-right">صافي قيمة المرتجع</th>
+                                                <th class="text-right">استرداد نقدي</th>
+                                                <th>المسجل</th>
+                                                <th>ملاحظات</th>
+                                                <th class="text-center">معاينة</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($invoice->returns as $ret)
+                                                <tr>
+                                                    <td>
+                                                        <a href="{{ route('viewer.returns.show', $ret->id) }}" class="font-weight-bold text-danger">
+                                                            {{ $ret->return_number }}
+                                                        </a>
+                                                    </td>
+                                                    <td>{{ $ret->return_date->format('Y-m-d') }}</td>
+                                                    <td>
+                                                        @foreach($ret->items as $rItem)
+                                                            <div class="font-small-2">
+                                                                • {{ $rItem->drug->name ?? '-' }}: <strong>{{ $rItem->quantity }}</strong> عبوة
+                                                            </div>
+                                                        @endforeach
+                                                    </td>
+                                                    <td class="text-right font-weight-bold text-danger">
+                                                        {{ number_format($ret->total_return_amount, 2) }} ج.م
+                                                    </td>
+                                                    <td class="text-right">
+                                                        @if($ret->refund_amount > 0)
+                                                            <span class="badge badge-success">{{ number_format($ret->refund_amount, 2) }} ج.م</span>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $ret->creator->name ?? 'النظام' }}</td>
+                                                    <td>{{ $ret->notes ?: '-' }}</td>
+                                                    <td class="text-center">
+                                                        <a href="{{ route('viewer.returns.show', $ret->id) }}" class="btn btn-sm btn-outline-info" title="عرض الإيصال">
+                                                            <i class="ft-eye"></i> عرض
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @endif
 
                         <!-- الملخص المالي -->
                         <div class="mt-2 row">

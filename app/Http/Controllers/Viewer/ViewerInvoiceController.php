@@ -4,23 +4,14 @@ namespace App\Http\Controllers\Viewer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Center;
-use App\Models\Invoice;
-use App\Models\InvoiceDetail;
-use App\Models\InvoicePayment;
-use App\Models\Pharmacist;
 use App\Models\Doctor;
-use App\Models\Drug;
-use App\Models\Province;
+use App\Models\Invoice;
+use App\Models\Pharmacist;
 use App\Models\Representative;
 use App\Models\Zone;
-use App\Models\DoctorDeal;
-use App\Models\Warehouse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
 use ArPHP\I18N\Arabic;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 
 class ViewerInvoiceController extends Controller
 {
@@ -47,7 +38,7 @@ class ViewerInvoiceController extends Controller
         $representatives = Representative::select('id', 'name')->get();
         $pharmacists = Pharmacist::select('id', 'name')->get();
 
-        return view('viewer.invoices.index', compact('invoices', 'centers', 'stats', 'zones','doctors', 'representatives', 'pharmacists'));
+        return view('viewer.invoices.index', compact('invoices', 'centers', 'stats', 'zones', 'doctors', 'representatives', 'pharmacists'));
     }
 
     public function export(Request $request)
@@ -62,7 +53,7 @@ class ViewerInvoiceController extends Controller
         $invoices = $query->latest('invoice_date')->get();
 
         if ($request->export_type == 'details') {
-            $filename = "invoices_details_report_" . date('Y-m-d') . ".csv";
+            $filename = 'invoices_details_report_'.date('Y-m-d').'.csv';
 
             // استخراج جميع الأدوية الفريدة من الفواتير لعمل أعمدة ديناميكية
             $uniqueDrugs = [];
@@ -78,14 +69,14 @@ class ViewerInvoiceController extends Controller
 
             $callback = function () use ($invoices, $uniqueDrugs) {
                 $file = fopen('php://output', 'w');
-                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // لدعم اللغة العربية
+                fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF)); // لدعم اللغة العربية
 
                 // 1. بناء صف العناوين (الهيدر)
                 $headers = ['رقم الفاتورة', 'التاريخ', 'الصيدلية', 'المركز'];
 
                 foreach ($uniqueDrugs as $drugId => $drugName) {
                     $headers[] = $drugName; // عمود للكمية
-                    $headers[] = 'خصم ' . $drugName . ' %'; // عمود للخصم
+                    $headers[] = 'خصم '.$drugName.' %'; // عمود للخصم
                 }
 
                 array_push($headers, 'الإجمالي (الصافي)', 'المدفوع', 'المتبقي', 'حالة الفاتورة');
@@ -119,7 +110,7 @@ class ViewerInvoiceController extends Controller
                     foreach ($uniqueDrugs as $drugId => $drugName) {
                         if (isset($detailsMap[$drugId])) {
                             $row[] = $detailsMap[$drugId]->quantity; // الكمية
-                            $row[] = $detailsMap[$drugId]->pharmacist_discount_percentage . '%'; // الخصم
+                            $row[] = $detailsMap[$drugId]->pharmacist_discount_percentage.'%'; // الخصم
                         } else {
                             $row[] = '0'; // الكمية صفر إذا لم يكن الدواء موجوداً
                             $row[] = '-'; // لا يوجد خصم
@@ -140,15 +131,15 @@ class ViewerInvoiceController extends Controller
             };
         } else {
             // التصدير العادي (ملخص)
-            $filename = "invoices_summary_report_" . date('Y-m-d') . ".csv";
+            $filename = 'invoices_summary_report_'.date('Y-m-d').'.csv';
 
             $callback = function () use ($invoices) {
                 $file = fopen('php://output', 'w');
-                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+                fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
                 fputcsv($file, [
                     'رقم الفاتورة', 'التاريخ', 'الصيدلية', 'المركز', 'المنطقة',
-                    'الأطباء', 'المندوب', 'الإجمالي (جمهور)', 'الصافي', 'المدفوع', 'المتبقي', 'الحالة'
+                    'الأطباء', 'المندوب', 'الإجمالي (جمهور)', 'الصافي', 'المدفوع', 'المتبقي', 'الحالة',
                 ]);
 
                 foreach ($invoices as $invoice) {
@@ -174,7 +165,7 @@ class ViewerInvoiceController extends Controller
                         $invoice->final_total,
                         $invoice->paid_amount,
                         $invoice->remaining_amount,
-                        $statusText
+                        $statusText,
                     ]);
                 }
                 fclose($file);
@@ -182,17 +173,26 @@ class ViewerInvoiceController extends Controller
         }
 
         return response()->stream($callback, 200, [
-            "Content-Type" => "text/csv",
-            "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma" => "no-cache",
-            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-            "Expires" => "0"
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$filename",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ]);
     }
 
     public function show(Invoice $invoice)
     {
-        $invoice->load(['representative', 'medicalRepresentative', 'pharmacist.center', 'doctors', 'details.drug']);
+        $invoice->load([
+            'representative',
+            'medicalRepresentative',
+            'pharmacist.center',
+            'doctors',
+            'details.drug',
+            'returns.items.drug',
+            'returns.creator',
+        ]);
+
         return view('viewer.invoices.show', compact('invoice'));
     }
 
@@ -200,7 +200,7 @@ class ViewerInvoiceController extends Controller
     {
         $invoice->load(['representative', 'medicalRepresentative', 'pharmacist.center', 'doctors', 'details.drug']);
         $html = view('admin.invoices.pdf', compact('invoice'))->render();
-        $arabic = new Arabic();
+        $arabic = new Arabic;
         $p = $arabic->arIdentify($html);
         for ($i = count($p) - 1; $i >= 0; $i -= 2) {
             $utf8ar = $arabic->utf8Glyphs(substr($html, $p[$i - 1], $p[$i] - $p[$i - 1]));
@@ -208,7 +208,8 @@ class ViewerInvoiceController extends Controller
         }
         $pdf = Pdf::loadHTML($html);
         $pdf->setOption(['dpi' => 150, 'defaultFont' => 'DejaVu Sans', 'isRemoteEnabled' => true]);
-        return $pdf->stream('invoice_' . $invoice->id . '.pdf');
+
+        return $pdf->stream('invoice_'.$invoice->id.'.pdf');
     }
 
     // ==========================================
@@ -217,15 +218,12 @@ class ViewerInvoiceController extends Controller
 
     public function payments(Invoice $invoice)
     {
-        $invoice->load(['payments' => function($q) {
+        $invoice->load(['payments' => function ($q) {
             $q->orderBy('payment_date', 'desc');
         }, 'pharmacist']);
+
         return view('viewer.invoices.payments', compact('invoice'));
     }
-
-
-
-
 
     // ==========================================
     // دوال المساعدة الداخلية
@@ -235,39 +233,41 @@ class ViewerInvoiceController extends Controller
     {
         return Pharmacist::with([
             'center',
-            'deals' => fn($q) => $q->where('is_archived', false)->where('is_active', true),
+            'deals' => fn ($q) => $q->where('is_archived', false)->where('is_active', true),
             'deals.doctor',
             'deals.drugs',
-        ])->get()->map(fn($ph) => [
-            'id'        => $ph->id,
-            'name'      => $ph->name,
+        ])->get()->map(fn ($ph) => [
+            'id' => $ph->id,
+            'name' => $ph->name,
             'center_id' => $ph->center_id,
-            'center'    => $ph->center ? [
-                'id'          => $ph->center->id,
-                'name'        => $ph->center->name,
+            'center' => $ph->center ? [
+                'id' => $ph->center->id,
+                'name' => $ph->center->name,
                 'province_id' => $ph->center->province_id,
             ] : null,
-            'deals'     => $ph->deals
-        ->map(function ($deal) {
-            if ($deal->is_archived || !$deal->doctor) return null;
+            'deals' => $ph->deals
+                ->map(function ($deal) {
+                    if ($deal->is_archived || ! $deal->doctor) {
+                        return null;
+                    }
 
-            $isComplete = $deal->target_amount > 0
-                && $deal->achieved_amount >= $deal->target_amount;
+                    $isComplete = $deal->target_amount > 0
+                        && $deal->achieved_amount >= $deal->target_amount;
 
-            return [
-                'id'         => $deal->id,
-                'drugs'      => $deal->drugs->pluck('id')->toArray(),
-                'is_general' => $deal->drugs->isEmpty(),
-                'doctor'     => [
-                    'id'              => $deal->doctor->id,
-                    'name'            => $deal->doctor->name . ($isComplete ? ' (مكتمل)' : ''),
-                    'speciality'      => $deal->doctor->speciality,
-                    'commission_rate' => $deal->commission_percentage,
-                ],
-            ];
-        })
-        ->filter()
-        ->values(),
+                    return [
+                        'id' => $deal->id,
+                        'drugs' => $deal->drugs->pluck('id')->toArray(),
+                        'is_general' => $deal->drugs->isEmpty(),
+                        'doctor' => [
+                            'id' => $deal->doctor->id,
+                            'name' => $deal->doctor->name.($isComplete ? ' (مكتمل)' : ''),
+                            'speciality' => $deal->doctor->speciality,
+                            'commission_rate' => $deal->commission_percentage,
+                        ],
+                    ];
+                })
+                ->filter()
+                ->values(),
         ]);
     }
 
@@ -295,7 +295,7 @@ class ViewerInvoiceController extends Controller
             $query->where('serial_number', $request->serial_number);
         }
         if ($request->filled('line')) {
-            $query->where('line', 'like', '%' . $request->line . '%');
+            $query->where('line', 'like', '%'.$request->line.'%');
         }
         if ($request->filled('status')) {
             $query->whereIn('status', (array) $request->status);
@@ -314,5 +314,4 @@ class ViewerInvoiceController extends Controller
 
         return $query;
     }
-
 }

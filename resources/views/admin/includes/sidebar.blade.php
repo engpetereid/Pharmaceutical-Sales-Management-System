@@ -36,7 +36,7 @@
             </li>
 
             {{-- الفواتير --}}
-            <li class="nav-item has-sub {{ request()->routeIs('admin.invoices.*') ? 'open' : '' }}">
+            <li class="nav-item has-sub {{ request()->routeIs('admin.invoices.*') && !request()->routeIs('admin.invoices.returns.*') ? 'open' : '' }}">
                 <a href="#">
                     <i class="la la-file-text"></i>
                     <span class="menu-title">فواتير المبيعات</span>
@@ -48,8 +48,16 @@
                     <li class="{{ request()->routeIs('admin.invoices.create') ? 'active' : '' }}">
                         <a class="menu-item" href="{{ route('admin.invoices.create') }}">إضافة فاتورة</a>
                     </li>
+                    <li class="nav-item {{ request()->routeIs('admin.returns.*') || request()->routeIs('admin.invoices.returns.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.returns.index') }}">
+                            <span class="menu-title">مرتجعات المبيعات</span>
+                        </a>
+                    </li>
                 </ul>
             </li>
+
+            {{-- مرتجعات المبيعات --}}
+
             <li class="nav-item has-sub {{ request()->routeIs('admin.deals.*') ? 'open' : '' }}">
                 <a href="#">
                     <i class="la la-google"></i>
@@ -170,6 +178,11 @@
                     </li>
                     <li class="{{ request()->routeIs('admin.centers.*') ? 'active' : '' }}">
                         <a class="menu-item" href="{{ route('admin.centers.index') }}">المراكز</a>
+                    </li>
+                    <li class="{{ request()->routeIs('admin.audit-logs.*') ? 'active' : '' }}">
+                        <a class="menu-item" href="{{ route('admin.audit-logs.index') }}">
+                            <i class="ft-shield"></i> سجل العمليات (Audit Log)
+                        </a>
                     </li>
                 </ul>
             </li>

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
 {
+    use Auditable;
+
     protected $table = 'invoices';
 
     protected $fillable = [
@@ -67,5 +70,20 @@ class Invoice extends Model
     {
         return $this->belongsToMany(DoctorDeal::class, 'doctor_deal_invoices', 'invoice_id', 'doctor_deal_id')
             ->withPivot('contribution_amount');
+    }
+
+    public function returns()
+    {
+        return $this->hasMany(InvoiceReturn::class)->latest('return_date');
+    }
+
+    public function hasReturns(): bool
+    {
+        return $this->returns()->exists();
+    }
+
+    public function totalReturnedAmount(): float
+    {
+        return (float) $this->returns()->sum('total_return_amount');
     }
 }

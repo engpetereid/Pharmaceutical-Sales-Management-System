@@ -3,20 +3,16 @@
 namespace App\Http\Controllers\Viewer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Zone;
-use Illuminate\Http\Request;
-use App\Models\Province;
 use App\Models\Center;
-use App\Models\Pharmacist;
 use App\Models\Doctor;
-use App\Models\Representative;
-use App\Models\Invoice;
-use App\Models\DoctorDeal;
 use App\Models\InvoicePayment;
-use App\Models\GeneralExpense;
+use App\Models\Pharmacist;
+use App\Models\Province;
+use App\Models\Representative;
+use App\Models\Zone;
 use App\Models\ZoneExpense;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class ViewerReportController extends Controller
 {
@@ -25,7 +21,7 @@ class ViewerReportController extends Controller
         $provinces = Province::select('provinces.id', 'provinces.name')
             ->leftJoin('centers', 'centers.province_id', '=', 'provinces.id')
             ->leftJoin('pharmacists', 'pharmacists.center_id', '=', 'centers.id')
-            ->leftJoin('invoices', function($join) use ($request) {
+            ->leftJoin('invoices', function ($join) use ($request) {
                 $join->on('invoices.pharmacist_id', '=', 'pharmacists.id');
                 if ($request->has('line')) {
                     $join->where('invoices.line', $request->line);
@@ -58,7 +54,6 @@ class ViewerReportController extends Controller
 
         return view('viewer.reports.province', compact('province', 'centers', 'totalSales'));
     }
-
 
     public function showCenter($id)
     {
@@ -94,7 +89,6 @@ class ViewerReportController extends Controller
         return view('viewer.reports.pharmacist', compact('pharmacist', 'invoices', 'totalSales', 'totalPaid', 'totalDue'));
     }
 
-
     public function doctorsIndex(Request $request)
     {
         $provinces = Province::select('provinces.id', 'provinces.name')
@@ -102,7 +96,7 @@ class ViewerReportController extends Controller
             ->leftJoin('doctors', 'doctors.center_id', '=', 'centers.id')
             // تعديل لربط جدول الفواتير مع جدول الأطباء عبر الجدول الوسيط
             ->leftJoin('doctor_invoice', 'doctor_invoice.doctor_id', '=', 'doctors.id')
-            ->leftJoin('invoices', function($join) use ($request) {
+            ->leftJoin('invoices', function ($join) use ($request) {
                 $join->on('invoices.id', '=', 'doctor_invoice.invoice_id');
                 if ($request->has('line')) {
                     $join->where('invoices.line', $request->line);
@@ -151,12 +145,12 @@ class ViewerReportController extends Controller
                 });
 
                 $doctor->unpaid_commission = $unpaidCommission;
+
                 return $doctor;
             });
 
         return view('viewer.reports.doctors.center', compact('center', 'doctors'));
     }
-
 
     public function showDoctor($id)
     {
@@ -176,7 +170,6 @@ class ViewerReportController extends Controller
         ));
     }
 
-
     public function payDoctorCommission(Request $request, $id)
     {
         $doctor = Doctor::findOrFail($id);
@@ -189,7 +182,7 @@ class ViewerReportController extends Controller
             $deal->update([
                 'is_paid' => true,
                 'status' => 1,
-                'paid_amount' => $deal->commission_amount
+                'paid_amount' => $deal->commission_amount,
             ]);
             $updatedCount++;
         }
@@ -201,23 +194,22 @@ class ViewerReportController extends Controller
         }
     }
 
-
     public function representativesIndex(Request $request)
     {
         $query = Representative::query();
-        $query->withSum(['invoices as total_sales' => function($q) use ($request) {
+        $query->withSum(['invoices as total_sales' => function ($q) use ($request) {
             if ($request->has('line') && ($request->line == 1 || $request->line == 2)) {
                 $q->where('line', $request->line);
             }
         }], 'final_total');
-        $query->withCount(['invoices' => function($q) use ($request) {
+        $query->withCount(['invoices' => function ($q) use ($request) {
             if ($request->has('line') && ($request->line == 1 || $request->line == 2)) {
                 $q->where('line', $request->line);
             }
         }]);
 
         if ($request->has('line') && ($request->line == 1 || $request->line == 2)) {
-            $query->whereHas('invoices', function($q) use ($request) {
+            $query->whereHas('invoices', function ($q) use ($request) {
                 $q->where('line', $request->line);
             });
         }
@@ -228,7 +220,6 @@ class ViewerReportController extends Controller
 
         return view('viewer.reports.representatives.index', compact('representatives'));
     }
-
 
     public function showRepresentative($id)
     {
@@ -244,6 +235,7 @@ class ViewerReportController extends Controller
 
         return view('viewer.reports.representatives.show', compact('representative', 'invoices', 'totalSales', 'totalCollected'));
     }
+
     public function monthlyFinancials(Request $request)
     {
 
@@ -261,11 +253,12 @@ class ViewerReportController extends Controller
 
         // 2. حساب إجمالي الدخل
         $paymentsQuery = InvoicePayment::with(['invoice.pharmacist'])
+            ->where('amount', '>', 0)
             ->whereBetween('payment_date', [$startDate, $endDate]);
 
         // الفلترة بأكثر من منطقة إن وجد
-        if (!empty($selectedZones)) {
-            $paymentsQuery->whereHas('invoice.pharmacist.center.zones', function($q) use ($selectedZones) {
+        if (! empty($selectedZones)) {
+            $paymentsQuery->whereHas('invoice.pharmacist.center.zones', function ($q) use ($selectedZones) {
                 $q->whereIn('zones.id', $selectedZones);
             });
         }
@@ -277,7 +270,7 @@ class ViewerReportController extends Controller
         $zoneExpensesQuery = ZoneExpense::with('zone')
             ->whereBetween('expense_date', [$startDate, $endDate]);
 
-        if (!empty($selectedZones)) {
+        if (! empty($selectedZones)) {
             $zoneExpensesQuery->whereIn('zone_id', $selectedZones);
         }
 
@@ -289,7 +282,7 @@ class ViewerReportController extends Controller
 
         $months = [
             1 => 'يناير', 2 => 'فبراير', 3 => 'مارس', 4 => 'أبريل', 5 => 'مايو', 6 => 'يونيو',
-            7 => 'يوليو', 8 => 'أغسطس', 9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر'
+            7 => 'يوليو', 8 => 'أغسطس', 9 => 'سبتمبر', 10 => 'أكتوبر', 11 => 'نوفمبر', 12 => 'ديسمبر',
         ];
         $years = range(Carbon::now()->year - 2, Carbon::now()->year + 1);
         $zones = Zone::pluck('name', 'id')->toArray();
@@ -301,10 +294,10 @@ class ViewerReportController extends Controller
 
             $callback = function () use ($payments, $zoneExpenses, $months, $selectedMonth, $selectedYear, $totalIncome, $totalExpenses, $netProfit) {
                 $file = fopen('php://output', 'w');
-                fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // لدعم اللغة العربية
+                fwrite($file, chr(0xEF).chr(0xBB).chr(0xBF)); // لدعم اللغة العربية
 
-                $monthName = $selectedMonth === 'all' ? 'كل الشهور' : $months[(int)$selectedMonth];
-                fputcsv($file, ['التقرير المالي للفترة:', $monthName . ' ' . $selectedYear]);
+                $monthName = $selectedMonth === 'all' ? 'كل الشهور' : $months[(int) $selectedMonth];
+                fputcsv($file, ['التقرير المالي للفترة:', $monthName.' '.$selectedYear]);
                 fputcsv($file, ['إجمالي الدخل', $totalIncome]);
                 fputcsv($file, ['إجمالي المصروفات', $totalExpenses]);
                 fputcsv($file, ['صافي التدفق النقدي', $netProfit]);
@@ -319,17 +312,17 @@ class ViewerReportController extends Controller
                 fputcsv($file, []);
                 fputcsv($file, ['--- تفاصيل المصروفات ---']);
                 foreach ($zoneExpenses as $expense) {
-                    fputcsv($file, [$expense->expense_date, $expense->zone->name ?? '-', $expense->description, '-' . $expense->amount]);
+                    fputcsv($file, [$expense->expense_date, $expense->zone->name ?? '-', $expense->description, '-'.$expense->amount]);
                 }
                 fclose($file);
             };
 
             return response()->stream($callback, 200, [
-                "Content-Type" => "text/csv",
-                "Content-Disposition" => "attachment; filename=$filename",
-                "Pragma" => "no-cache",
-                "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
-                "Expires" => "0"
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=$filename",
+                'Pragma' => 'no-cache',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires' => '0',
             ]);
         }
 
